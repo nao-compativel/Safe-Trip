@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Safe Trip or Not! 🚗</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <button id="btn-ajuda">Ajuda (?)</button>
+
+    <div id="tela-login">
+      <div class="form-container">
+        <h1>Safe Trip or Not!</h1>
+        <input
+          type="text"
+          id="nome-jogador"
+          placeholder="Seu nome"
+          maxlength="12"
+        />
+        <input type="text" id="id-sala" placeholder="Nome da Sala" />
+        <input
+          type="number"
+          id="distancia-km"
+          placeholder="Distância da Corrida (ex: 700)"
+          value="700"
+        />
+        <button id="btn-entrar">Criar ou Entrar na Sala</button>
+      </div>
+      <div id="lista-salas-container">
+        <h2>Salas Abertas</h2>
+        <div id="lista-salas">
+          <p>Nenhuma sala aberta no momento.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="tela-espera" class="hidden">
+      <h2>Sala: <span id="nome-sala-espera"></span></h2>
+      <h3>Jogadores na sala:</h3>
+      <ul id="lista-jogadores-espera"></ul>
+      <button id="btn-iniciar-jogo">Iniciar Jogo</button>
+    </div>
+
+    <div id="tela-jogo" class="hidden">
+      <div id="oponentes"></div>
+      <div id="pista-container">
+        <div class="linha-chegada"></div>
+      </div>
+      <div id="area-jogador">
+        <div id="hud-jogador">
+          <div id="timer-bar-container">
+            <div id="timer-bar-inner"></div>
+          </div>
+          <h3 id="nome-jogador-hud"></h3>
+          <div class="hud-info">
+            <p>Distância: <span id="distancia-jogador-hud">0</span> km</p>
+            <div id="perigos-jogador-hud"></div>
+            <div id="segurancas-jogador-hud"></div>
+          </div>
+          <div id="controles-jogador">
+            <button id="btn-modo-descartar">
+              Descartar para Passar o Turno
+            </button>
+          </div>
+        </div>
+        <div id="mao-e-log">
+          <div id="mao-container">
+            <h2>Sua Mão</h2>
+            <div id="mao-jogador"></div>
+          </div>
+          <div id="log-jogo-container">
+            <h2>Histórico</h2>
+            <div id="log-jogo"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="turno-notificacao" class="hidden">
+      <h1>SEU TURNO!</h1>
+    </div>
+    <div id="velocidade-notificacao" class="notificacao hidden">...</div>
+    <div id="erro-notificacao" class="notificacao erro hidden"></div>
+    <div id="modal-ajuda" class="modal hidden">
+      <div class="modal-conteudo">
+        <span id="btn-fechar-ajuda" class="fechar">&times;</span>
+        <h2>Como Jogar "Safe Trip or Not!"</h2>
+        <h3>Objetivo</h3>
+        <p>
+          Seja o primeiro jogador a alcançar exatamente a distância definida
+          para a corrida.
+        </p>
+        <h3>Seu Turno</h3>
+        <p>
+          No início do seu turno (que dura 15 segundos), você compra uma carta.
+          Depois, você deve fazer <strong>uma</strong> das seguintes ações:
+        </p>
+        <ul>
+          <li><strong>Jogar uma carta:</strong> Use uma carta da sua mão.</li>
+          <li>
+            <strong>Descartar uma carta:</strong> Se não puder/quiser jogar,
+            clique em "Descartar para Passar o Turno" e escolha uma carta para
+            jogar fora.
+          </li>
+        </ul>
+        <p>
+          Se o tempo acabar, o sistema jogará a melhor carta possível por você
+          ou descartará uma aleatória.
+        </p>
+        <h3>Tipos de Carta</h3>
+        <p>
+          <strong>🛣️ Distância:</strong> Permite que você avance. Só funciona se
+          não tiver perigos e tiver um "sinal verde" (carta Siga).
+        </p>
+        <p>
+          <strong>🛑 Perigo:</strong> Cartas para atrapalhar seus oponentes.
+        </p>
+        <p>
+          <strong>🟢 Solução:</strong> Cartas para consertar seus próprios
+          problemas.
+        </p>
+        <p>
+          <strong>✨ Segurança:</strong> Cartas que te dão imunidade permanente
+          a certos perigos.
+        </p>
+      </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
+  </body>
+</html>
