@@ -20,5 +20,4 @@ export type SegurancaType =
 export interface Card {
   tipo: CardType;
   valor: number | PerigoType | SolucaoType | SegurancaType;
-  emoji?: string;
 }
