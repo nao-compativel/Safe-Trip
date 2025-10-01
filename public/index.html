@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="../style/loginpage.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
     <link
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Russo+One&display=swap"
       rel="stylesheet"
@@ -41,16 +42,13 @@
         <h2 class="rooms-title">Salas Abertas</h2>
         <div class="room-list">
           <div class="room-item">
-            <span>Sala 1</span>
+            <span class="room-name">Sala Exemplo #1</span>
+            <span class="room-players">2/4</span>
             <button class="join-button">Entrar</button>
-          </div>
-          <div class="room-item">
-            <span>Sala 2</span>
-            <button class="join-button">Entrar</button>
-          </div>
-          <div class="room-item inactive"></div>
         </div>
       </div>
     </main>
+    <script src="./socket.io/socket.io.js"></script>
+    <script src="./js/lobby.js"></script>
   </body>
 </html>
