@@ -59,7 +59,6 @@ export class Deck {
     }
 
     this.cartas = [];
-    // Toda a lógica do `emojiMap` foi removida por não ser mais necessária.
     defs.forEach(([tipo, valor, qtd]) => {
       for (let i = 0; i < qtd; i++) {
         this.cartas.push({ tipo, valor });
