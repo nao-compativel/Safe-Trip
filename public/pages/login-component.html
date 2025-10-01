@@ -1,58 +1,56 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Safe Trip or Not! - Lobby</title>
-    <link rel="stylesheet" href="../style/loginpage.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Russo+One&display=swap" rel="stylesheet">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Safe Trip - Lobby</title>
+    <link rel="stylesheet" href="../style/loginpage.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Russo+One&display=swap"
+      rel="stylesheet"
+    />
+  </head>
 
-</head>
-
-<body>
+  <body>
     <div class="background-overlay"></div>
     <main class="container">
+      <!--Card Esquerda-->
 
-<!--Card Esquerda-->
-
-    <div class="card game-card">
-        <h1 class="game-title">Safe Trip or Not!</h1>
+      <div class="card game-card">
+        <h1 class="game-title">Safe Trip!</h1>
 
         <div class="input-group">
-            <label for="playerName">Username</label>
-            <input type="text" id="playerName">
+          <label for="playerName">Username</label>
+          <input type="text" id="playerName" />
         </div>
 
         <div class="input-group">
-            <label for="roomName">Nome da Sala</label>
-            <input type="text" id="roomName">
+          <label for="roomName">Nome da Sala</label>
+          <input type="text" id="roomName" />
         </div>
 
         <button class="action-button">Criar Sala</button>
-        <button class="action-button">Entrar na Sala</button>
         <button class="action-button">Ajuda(?)</button>
+      </div>
 
-    </div>
+      <!--Sala de Jogos-->
 
-<!--Sala de Jogos-->
-
-    <div class="card rooms-card">
+      <div class="card rooms-card">
         <h2 class="rooms-title">Salas Abertas</h2>
         <div class="room-list">
-
-            <div class="room-item">
-                <span>Sala 1</span>
-                <span>Sala 2</span>
-            </div>
-            <div class="room-item inactive">
-
-            </div>
+          <div class="room-item">
+            <span>Sala 1</span>
+            <button class="join-button">Entrar</button>
+          </div>
+          <div class="room-item">
+            <span>Sala 2</span>
+            <button class="join-button">Entrar</button>
+          </div>
+          <div class="room-item inactive"></div>
         </div>
-    </div>
-
-</main>   
-    
-</body>
+      </div>
+    </main>
+  </body>
 </html>
