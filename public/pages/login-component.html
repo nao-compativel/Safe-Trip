@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="tela-login">
+      <div class="form-container">
+        <h1>Safe Trip or Not!</h1>
+        <input
+          type="text"
+          id="nome-jogador"
+          placeholder="Seu nome"
+          maxlength="12"
+        />
+        <input type="text" id="id-sala" placeholder="Nome da Sala" />
+        <input
+          type="number"
+          id="distancia-km"
+          placeholder="Distância da Corrida (ex: 700)"
+          value="700"
+        />
+        <button id="btn-entrar">Criar ou Entrar na Sala</button>
+      </div>
+      <div id="lista-salas-container">
+        <h2>Salas Abertas</h2>
+        <div id="lista-salas">
+          <p>Nenhuma sala aberta no momento.</p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
