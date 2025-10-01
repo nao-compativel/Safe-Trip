@@ -33,6 +33,12 @@ export class GameRoom {
   currentTurnDuration: number = 15000;
   rooms: Map<string, GameRoom> = new Map();
 
+  // --- CONSTANTES PARA A DINÂMICA DE VELOCIDADE ---
+  readonly tempoMaximoTurno: number = 15000; // 15 segundos
+  readonly tempoMinimoTurno: number = 5000; // 5 segundos
+  readonly fatorExponencial: number = 2; // Aumentar para uma curva mais acentuada
+  // --- [FIM] CONSTANTES ---
+
   public onStateChange: (message?: string) => void = () => {};
 
   constructor(id: string, distanciaObjetivo: number = 700) {
@@ -138,26 +144,23 @@ export class GameRoom {
       `${jogador.nome} não jogou a tempo! Descartando uma carta...`
     );
 
-    // LÓGICA DE DESCARTE INTELIGENTE
-    // Prioridade 1: Descartar uma carta de distância que ultrapassa o objetivo.
     let indexToDiscard = jogador.mao.findIndex(
       (c) =>
         c.tipo === "distancia" &&
         jogador.distancia + (c.valor as number) > this.distanciaObjetivo
     );
 
-    // Prioridade 2: Se não encontrou, descarta a primeira carta de distância que tiver.
     if (indexToDiscard === -1) {
       indexToDiscard = jogador.mao.findIndex((c) => c.tipo === "distancia");
     }
 
-    // Prioridade 3: Se ainda não encontrou, descarta a primeira carta da mão (fallback).
     if (indexToDiscard === -1) {
       indexToDiscard = 0;
     }
 
     this.descartarCarta(playerId, indexToDiscard);
   }
+
   public proximoTurno() {
     this.clearTurnTimer();
     if (this.estado === "FINALIZADO") {
@@ -184,29 +187,34 @@ export class GameRoom {
     const novaCarta = this.baralho.comprar_carta();
     if (novaCarta) proximoJogador.mao.push(novaCarta);
 
-    const progresso = proximoJogador.distancia / this.distanciaObjetivo;
-
+    // --- LÓGICA DE TEMPO EXPONENCIAL ATUALIZADA ---
     if (!proximoJogador.isBot) {
-      if (progresso >= 0.85) {
-        this.currentTurnDuration = 7000;
-      } else if (progresso >= 0.65) {
-        this.currentTurnDuration = 10000;
-      } else {
-        this.currentTurnDuration = 15000;
-      }
+      const progresso = Math.min(
+        1,
+        proximoJogador.distancia / this.distanciaObjetivo
+      );
+
+      const rangeTempo = this.tempoMaximoTurno - this.tempoMinimoTurno;
+      const reducaoTempo =
+        rangeTempo * Math.pow(progresso, this.fatorExponencial);
+
+      this.currentTurnDuration = Math.max(
+        this.tempoMinimoTurno,
+        this.tempoMaximoTurno - reducaoTempo
+      );
     } else {
-      this.currentTurnDuration = 2000; // Tempo fixo para bots
+      this.currentTurnDuration = 1000; // Tempo fixo para bots
     }
+    // --- [FIM] LÓGICA ATUALIZADA ---
 
     this.turnStartTime = Date.now();
     this.onStateChange(`É a vez de ${proximoJogador.nome}.`);
 
-    // LÓGICA DO CALLBACK ATUALIZADA
     const timeoutCallback = () => {
       if (proximoJogador.isBot) {
-        this.autoPlay(proximoJogador.id); // Bots usam a IA completa
+        this.autoPlay(proximoJogador.id);
       } else {
-        this.handleIdleHuman(proximoJogador.id); // Humanos apenas perdem a vez
+        this.handleIdleHuman(proximoJogador.id);
       }
     };
 
@@ -357,11 +365,9 @@ export class GameRoom {
         this.onStateChange(msg);
 
         const callback = () => {
-          // A lógica do turno extra é reiniciada aqui
           if (jogador.isBot) {
             this.autoPlay(jogador.id);
           } else {
-            // Reinicia um novo timer para o jogador humano
             const humanCallback = () => this.handleIdleHuman(jogador.id);
             this.turnTimer = setTimeout(
               humanCallback,
@@ -370,11 +376,10 @@ export class GameRoom {
           }
         };
 
-        // Para bots, a jogada extra é quase imediata.
         if (jogador.isBot) {
           setTimeout(callback, 1000);
         } else {
-          callback(); // Para humanos, a preparação do novo turno é imediata
+          callback();
         }
 
         return { success: true, message: msg };
@@ -405,14 +410,11 @@ export class GameRoom {
     return { success: true, message: msg };
   }
 
-  /**
-   * MÉTODO ATUALIZADO: autoPlay agora é uma IA apenas para BOTS.
-   */
   autoPlay(playerId: string) {
     const jogador = this.jogadores.get(playerId);
     if (
       !jogador ||
-      !jogador.isBot || // Garante que apenas bots usem esta IA
+      !jogador.isBot ||
       playerId !== this.ordemTurno[this.jogadorAtualIdx] ||
       this.estado !== "JOGANDO"
     ) {
@@ -433,7 +435,6 @@ export class GameRoom {
       );
 
       if (humanPlayer) {
-        const distanceGap = jogador.distancia - humanPlayer.distancia;
         if (humanPlayer.distancia > jogador.distancia + 200) {
           difficulty = "DIFICIL";
         } else if (jogador.distancia > humanPlayer.distancia + 200) {
@@ -559,7 +560,7 @@ export class GameRoom {
         }
         this.descartarCarta(playerId, indexToDiscard);
       }
-    }, 1000); // Tempo de "pensamento" do bot.
+    }, 1000);
   }
 
   public deleteRoom(id: string) {
@@ -570,15 +571,9 @@ export class GameRoom {
     console.log("[Cleanup] Procurando por salas inativas...");
     const roomsToDelete: string[] = [];
     this.rooms.forEach((room, id) => {
-      // Critério 1: A sala está vazia
       if (room.jogadores.size === 0) {
         roomsToDelete.push(id);
       }
-      // Você poderia adicionar outros critérios, como:
-      // Critério 2: A sala está finalizada há mais de 10 minutos
-      // if (room.estado === 'FINALIZADO' && (Date.now() - room.turnStartTime) > 600000) {
-      //     roomsToDelete.push(id);
-      // }
     });
 
     if (roomsToDelete.length > 0) {
