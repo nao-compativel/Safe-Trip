@@ -1,17 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Safe Trip - Sala de Espera</title>
-    <link rel="stylesheet" href="../style/espera-page.css">
+    <link rel="stylesheet" href="../style/loading.css" />
   </head>
   <body>
     <div id="tela-espera">
-      <h2>Sala: <span id="nome-sala-espera"></span></h2>
+      <h2>Sala: <span id="nome-sala-espera">Carregando...</span></h2>
       <h3>Jogadores na sala:</h3>
       <ul id="lista-jogadores-espera"></ul>
       <button id="btn-iniciar-jogo">Iniciar Jogo</button>
     </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="../js/loading.js"></script>
   </body>
 </html>

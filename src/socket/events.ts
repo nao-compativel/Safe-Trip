@@ -1,4 +1,5 @@
-// src/socket/events.ts
+// src/socket/events.ts (VERSÃO FINAL CORRIGIDA)
+
 import { Server, Socket } from "socket.io";
 import { roomManager } from "./RoomManager";
 
@@ -9,29 +10,70 @@ function broadcastRoomList(io: Server) {
 
 export function handleSocketEvents(io: Server, socket: Socket) {
   console.log(`Usuário conectado: ${socket.id}`);
-
-  // Envia a lista de salas apenas para o novo usuário conectado
   socket.emit("listaDeSalas", roomManager.getPublicRooms());
 
   socket.on("entrarNaSala", ({ nomeJogador, idSala, distancia }) => {
+    console.log(`[SERVER] Evento 'entrarNaSala': ${nomeJogador} -> ${idSala}`);
     const room = roomManager.getOrCreateRoom(idSala, distancia);
-    const resultado = room.adicionarJogador(socket.id, nomeJogador);
-    if (!resultado.success) {
-      socket.emit("log", `Erro ao entrar na sala: ${resultado.message}`);
-      return;
+
+    if (room.estado === "AGUARDANDO") {
+      const resultado = room.adicionarJogador(socket.id, nomeJogador);
+      if (!resultado.success) {
+        socket.emit("erroEntrar", { message: resultado.message });
+        return;
+      }
+      socket.join(idSala);
+      socket.data.idSala = idSala;
+
+      const playersInfo = Array.from(room.jogadores.values()).map((p) => ({
+        id: p.id,
+        nome: p.nome,
+        isBot: p.isBot,
+      }));
+      io.to(idSala).emit("listaJogadores", playersInfo);
+      broadcastRoomList(io);
+    } else if (room.estado === "JOGO") {
+      // [LÓGICA DE RECONEXÃO ROBUSTA]
+      // Não confia mais na flag 'disconnected'. Apenas procura por nome.
+      const jogadorExistente = Array.from(room.jogadores.values()).find(
+        (p) => !p.isBot && p.nome === nomeJogador
+      );
+
+      if (!jogadorExistente) {
+        socket.emit("erroEntrar", {
+          message: "Este jogo já começou e você não é um dos jogadores.",
+        });
+        return;
+      }
+
+      console.log(
+        `[SERVER] Forçando reconexão para '${nomeJogador}'. Trocando ID ${jogadorExistente.id} por ${socket.id}`
+      );
+      const oldSocketId = jogadorExistente.id;
+
+      // Desconecta o socket antigo se ele ainda estiver ativo por algum motivo
+      if (io.sockets.sockets.get(oldSocketId)) {
+        io.sockets.sockets.get(oldSocketId)?.disconnect();
+      }
+
+      room.jogadores.delete(oldSocketId);
+
+      jogadorExistente.id = socket.id;
+      jogadorExistente.disconnected = false; // Garante que está como conectado
+      room.jogadores.set(socket.id, jogadorExistente);
+
+      const indexNaOrdem = room.ordemTurno.indexOf(oldSocketId);
+      if (indexNaOrdem > -1) {
+        room.ordemTurno[indexNaOrdem] = socket.id;
+      }
+
+      socket.join(idSala);
+      socket.data.idSala = idSala;
+
+      io.to(idSala).emit("log", `${nomeJogador} reconectou!`);
+      const gameState = room.getStateFor(socket.id);
+      socket.emit("updateState", gameState);
     }
-
-    socket.join(idSala);
-    socket.data.idSala = idSala;
-
-    io.to(idSala).emit("log", `${nomeJogador} entrou na sala.`);
-    const playersInfo = Array.from(room.jogadores.values()).map((p) => ({
-      id: p.id,
-      nome: p.nome,
-    }));
-    io.to(idSala).emit("listaJogadores", playersInfo);
-
-    broadcastRoomList(io);
   });
 
   socket.on("iniciarJogo", (idSala) => {
@@ -39,14 +81,7 @@ export function handleSocketEvents(io: Server, socket: Socket) {
     if (room && room.jogadores.get(socket.id)) {
       if (room.jogadores.size === 1) {
         room.addBots(3);
-        io.to(idSala).emit("log", `Adicionando 3 bots para a corrida!`);
-        const playersInfo = Array.from(room.jogadores.values()).map((p) => ({
-          id: p.id,
-          nome: p.nome,
-        }));
-        io.to(idSala).emit("listaJogadores", playersInfo);
       }
-
       if (room.jogadores.size >= 2) {
         room.onStateChange = (message?: string) => {
           if (message) {
@@ -59,12 +94,8 @@ export function handleSocketEvents(io: Server, socket: Socket) {
             }
           });
         };
-
         room.iniciarJogo();
-        console.log(`Jogo iniciado na sala ${idSala}`);
-        broadcastRoomList(io); // Remove a sala da lista de salas abertas
-      } else {
-        socket.emit("log", "É necessário pelo menos 2 jogadores para começar.");
+        broadcastRoomList(io);
       }
     }
   });
@@ -74,7 +105,7 @@ export function handleSocketEvents(io: Server, socket: Socket) {
     if (room) {
       const result = room.jogarCarta(socket.id, indiceCarta, alvoId);
       if (!result.success) {
-        socket.emit("log", `Jogada Inválida: ${result.message}`);
+        socket.emit("erroJogada", { message: result.message });
       }
     }
   });
@@ -86,67 +117,48 @@ export function handleSocketEvents(io: Server, socket: Socket) {
     }
   });
 
-  // [ATUALIZADO] Lógica de desconexão simplificada
   socket.on("disconnect", () => {
     console.log(`[Disconnect] Usuário desconectado: ${socket.id}`);
     const idSala = socket.data.idSala;
+    if (!idSala) return;
 
-    if (idSala) {
-      const room = roomManager.getRoom(idSala);
-      if (room) {
-        const eraTurnoDoJogador = room.removerJogador(socket.id);
+    const room = roomManager.getRoom(idSala);
+    if (!room) return;
 
-        if (room.jogadores.size === 0) {
+    const jogador = room.jogadores.get(socket.id);
+
+    // Se o jogador não foi encontrado, ele já foi substituído por uma reconexão, então não fazemos nada.
+    if (!jogador) return;
+
+    if (room.estado === "AGUARDANDO") {
+      room.removerJogador(socket.id);
+      if (room.jogadores.size === 0) {
+        roomManager.deleteRoom(idSala);
+      }
+      broadcastRoomList(io);
+    } else if (room.estado === "JOGO") {
+      if (!jogador.isBot) {
+        jogador.disconnected = true;
+        io.to(idSala).emit(
+          "log",
+          `${jogador.nome} se desconectou. Aguardando reconexão...`
+        );
+
+        const humanPlayers = Array.from(room.jogadores.values()).filter(
+          (p) => !p.isBot && !p.disconnected
+        );
+        if (humanPlayers.length === 0) {
           console.log(
-            `[Disconnect] Sala ${idSala} ficou vazia e foi deletada.`
+            `[SERVER] Todos os humanos desconectaram da sala ${idSala}. Deletando sala.`
           );
-          roomManager.deleteRoom(idSala);
-        } else if (room.estado === "JOGO" && room.jogadores.size < 2) {
-          // [CORRIGIDO]
           io.to(idSala).emit("jogoEncerrado", {
-            message:
-              "A partida foi encerrada pois não há oponentes suficientes.",
+            message: "Todos os jogadores saíram. A partida foi encerrada.",
           });
           roomManager.deleteRoom(idSala);
-        } else if (eraTurnoDoJogador && room.estado === "JOGO") {
-          // [CORRIGIDO]
-          console.log(
-            `[Disconnect] Jogador do turno atual saiu. Avançando para o próximo.`
-          );
+          broadcastRoomList(io);
+        } else if (room.ordemTurno[room.jogadorAtualIdx] === socket.id) {
           room.proximoTurno();
-        } else {
-          const playersInfo = Array.from(room.jogadores.values()).map((p) => ({
-            id: p.id,
-            nome: p.nome,
-          }));
-          io.to(idSala).emit("listaJogadores", playersInfo);
         }
-
-        broadcastRoomList(io);
-      }
-    }
-  });
-  // Apenas funcionam em salas que começam com "debug_" para segurança
-  socket.on("debug:giveCard", ({ card }) => {
-    const room = roomManager.getRoom(socket.data.idSala);
-    if (room && socket.data.idSala.startsWith("debug")) {
-      const player = room.jogadores.get(socket.id);
-      if (player) {
-        player.mao.push(card);
-        room.onStateChange?.(); // Força a atualização do estado para todos
-      }
-    }
-  });
-
-  socket.on("debug:forceMyTurn", () => {
-    const room = roomManager.getRoom(socket.data.idSala);
-    if (room && socket.data.idSala.startsWith("debug_")) {
-      const myIndex = room.ordemTurno.indexOf(socket.id);
-      if (myIndex !== -1) {
-        room.jogadorAtualIdx = myIndex;
-        room.onStateChange?.(
-          `Turno forçado para ${room.jogadores.get(socket.id)?.nome}.`
-        );
       }
     }
   });

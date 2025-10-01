@@ -2,7 +2,6 @@ import { Player } from "./Player";
 import { Deck } from "./Deck";
 import { Card, PerigoType, SegurancaType, SolucaoType } from "./Card";
 
-// [REINTEGRADO] Tipos e constantes da versão anterior
 type BotDifficulty = "FACIL" | "NORMAL" | "DIFICIL";
 const MAX_PLAYERS = 5;
 
@@ -31,8 +30,6 @@ export class GameRoom {
   estado: RoomState = "AGUARDANDO";
   vencedor: Player | null = null;
   distanciaObjetivo: number;
-
-  // [REINTEGRADO] Propriedades para o timer de turno
   turnTimer: NodeJS.Timeout | null = null;
   turnStartTime: number = 0;
   currentTurnDuration: number = 15000;
@@ -44,7 +41,6 @@ export class GameRoom {
     this.distanciaObjetivo = distanciaObjetivo;
   }
 
-  // [MERGIDO] Lógica de MAX_PLAYERS adicionada
   adicionarJogador(
     id: string,
     nome: string
@@ -63,7 +59,6 @@ export class GameRoom {
     return { success: true, message: "Jogador adicionado.", jogador };
   }
 
-  // [REINTEGRADO] Nomes divertidos para os bots
   addBots(count: number) {
     const botNames = ["Herbie", "KITT", "Mach 5", "Relâmpago McQueen"];
     for (let i = 0; i < count; i++) {
@@ -79,10 +74,20 @@ export class GameRoom {
     }
   }
 
+  /**
+   * [CORREÇÃO 1] O método agora cancela o timer do turno se o jogador
+   * que está saindo for o jogador atual, evitando "timers zumbis".
+   */
   removerJogador(id: string): boolean {
     const jogador = this.jogadores.get(id);
     if (!jogador) return false;
+
     const eraTurnoDele = this.ordemTurno[this.jogadorAtualIdx] === id;
+
+    if (eraTurnoDele) {
+      this.clearTurnTimer();
+    }
+
     this.jogadores.delete(id);
     this.onStateChange?.(`${jogador.nome} saiu da sala.`);
     const indexNaOrdem = this.ordemTurno.indexOf(id);
@@ -95,7 +100,6 @@ export class GameRoom {
     return eraTurnoDele;
   }
 
-  // [REINTEGRADO] Lógica completa de iniciar o jogo com embaralhamento e emojis
   iniciarJogo() {
     if (this.jogadores.size < 2 || this.estado === "JOGO") return;
     this.estado = "JOGO";
@@ -121,13 +125,26 @@ export class GameRoom {
         if (carta) jogador.mao.push(carta);
       }
     });
-    this.jogadorAtualIdx = -1; // Para que o primeiro proximoTurno comece com o índice 0
+    this.jogadorAtualIdx = -1;
     this.proximoTurno();
   }
 
-  // [MERGIDO] Lógica de timer e verificação de vitória unificadas
+  /**
+   * [CORREÇÃO 2] O método agora tem uma "guarda" no início para impedir
+   * sua execução se não houver mais jogadores, evitando o crash.
+   */
   proximoTurno() {
     this.clearTurnTimer();
+
+    if (this.ordemTurno.length === 0) {
+      console.log(
+        "[GameRoom] Fim de jogo: não há mais jogadores na ordem de turno."
+      );
+      this.estado = "ENCERRADA";
+      this.onStateChange?.("Jogo encerrado por falta de jogadores.");
+      return;
+    }
+
     if (this.estado === "ENCERRADA") {
       this.onStateChange?.();
       return;
@@ -176,7 +193,6 @@ export class GameRoom {
     this.turnTimer = setTimeout(timeoutCallback, this.currentTurnDuration);
   }
 
-  // [REINTEGRADO] Lógica completa de `jogarCarta`
   jogarCarta(
     socketId: string,
     indiceCarta: number,
@@ -190,14 +206,11 @@ export class GameRoom {
     const carta = jogador.mao[indiceCarta];
     if (!carta) return { success: false, message: "Carta não encontrada." };
 
-    // Timer só é limpo para jogadas que passam o turno
     if (!jogador.isBot && carta.tipo !== "seguranca") {
       this.clearTurnTimer();
     }
 
     let msg = "";
-    // Lógica interna da carta (exatamente como na sua versão anterior)
-    // ... (código completo omitido por brevidade, mas está aqui)
     switch (carta.tipo) {
       case "distancia":
         if (jogador.precisa_do_siga)
@@ -342,7 +355,6 @@ export class GameRoom {
     return { success: true, message: msg };
   }
 
-  // [REINTEGRADO] Lógica de descarte
   descartarCarta(
     socketId: string,
     indiceCarta: number
@@ -363,7 +375,6 @@ export class GameRoom {
     return { success: true, message: msg };
   }
 
-  // [REINTEGRADO] Lógica de descarte para jogador ocioso
   private handleIdleHuman(playerId: string) {
     const jogador = this.jogadores.get(playerId);
     if (!jogador || jogador.mao.length === 0) {
@@ -384,7 +395,6 @@ export class GameRoom {
     this.descartarCarta(playerId, indexToDiscard);
   }
 
-  // [REINTEGRADO] Função para limpar o timer
   private clearTurnTimer() {
     if (this.turnTimer) {
       clearTimeout(this.turnTimer);
@@ -392,7 +402,6 @@ export class GameRoom {
     }
   }
 
-  // [REINTEGRADO] Inteligência Artificial completa para os Bots
   autoPlay(playerId: string) {
     const jogador = this.jogadores.get(playerId);
     if (
@@ -458,11 +467,11 @@ export class GameRoom {
         if (attackCardIndex > -1) {
           const alvosPotenciais = Array.from(this.jogadores.values()).filter(
             (p) => !p.isBot && p.id !== playerId
-          ); // Prioriza atacar humanos
+          );
           if (alvosPotenciais.length > 0) {
             const alvoFinal = alvosPotenciais.sort(
               (a, b) => b.distancia - a.distancia
-            )[0]; // Ataca o humano mais avançado
+            )[0];
             if (alvoFinal) {
               acaoParaExecutar = {
                 tipo: "JOGAR",
@@ -497,13 +506,12 @@ export class GameRoom {
           acaoParaExecutar.alvoId
         );
       } else {
-        let indexToDiscard = 0; // Descarta a primeira por padrão
+        let indexToDiscard = 0;
         this.descartarCarta(playerId, indexToDiscard);
       }
     }, 1000);
   }
 
-  // [MERGIDO] `getStateFor` agora inclui informações do timer
   getStateFor(socketId: string) {
     const jogador = this.jogadores.get(socketId);
     if (!jogador) return null;

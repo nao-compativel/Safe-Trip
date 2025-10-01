@@ -1,85 +1,62 @@
-// Conectando ao servidor Socket.IO
+// public/js/lobby.js
+
+console.log("[LOBBY] Script lobby.js carregado.");
 const socket = io();
 
 // --- MAPEAMENTO DOS ELEMENTOS DA INTERFACE (UI) ---
 const ui = {
-  // Card da esquerda
   playerNameInput: document.getElementById("playerName"),
   roomNameInput: document.getElementById("roomName"),
   createRoomButton: document.querySelector(
     ".game-card .action-button:nth-of-type(1)"
   ),
-  helpButton: document.querySelector(
-    ".game-card .action-button:nth-of-type(2)"
-  ),
-
-  // Card da direita
+  helpButton: document.getElementById("helpButton"),
   roomList: document.querySelector(".room-list"),
 
-  // --- [INÍCIO] NOVOS ELEMENTOS DO MODAL ---
+  // Modal de Configurações
   settingsButton: document.querySelector(".settings-button"),
   settingsModal: document.getElementById("settingsModal"),
-  closeModalButton: document.querySelector(".close-button"),
+  closeSettingsModalButton: document.querySelector(
+    "#settingsModal .close-button"
+  ),
   volumeSlider: document.getElementById("volumeSlider"),
-  // --- [FIM] NOVOS ELEMENTOS DO MODAL ---
+
+  // Modal de Ajuda
+  helpModal: document.getElementById("helpModal"),
+  closeHelpModalButton: document.querySelector("#helpModal .close-button"),
 };
 
 // --- CONTROLE DE MÚSICA E SOM ---
 const musicas = {
-  lobby: new Audio("../sounds/lobby_music.mp3"),
+  lobby: new Audio("/sounds/lobby_music.mp3"),
 };
 
-/**
- * Toca a música do lobby, respeitando o volume salvo.
- */
 function tocarMusicaLobby() {
   const musicaLobby = musicas.lobby;
   if (!musicaLobby) return;
 
-  Object.values(musicas).forEach((music) => music.pause()); // Para todas as outras
-
   musicaLobby.loop = true;
-  musicaLobby.volume = ui.volumeSlider.value; // Usa o valor atual do slider
+  musicaLobby.volume = ui.volumeSlider.value;
   musicaLobby.play().catch(() => {
-    // Autoplay foi bloqueado, a música começará quando o usuário clicar na tela
     console.warn(
       "Navegador bloqueou autoplay. A música iniciará com a interação do usuário."
     );
   });
 }
 
-/**
- * Define o volume de todas as músicas e salva a preferência.
- * @param {number} volume - O nível do volume (entre 0 e 1).
- */
 function setVolume(volume) {
   const vol = parseFloat(volume);
   if (isNaN(vol)) return;
-
-  // Aplica o volume a todas as instâncias de áudio
-  Object.values(musicas).forEach((music) => {
-    music.volume = vol;
-  });
-
-  // Salva a preferência no cache do navegador
+  musicas.lobby.volume = vol;
   localStorage.setItem("gameVolume", vol);
-}
-
-// --- LÓGICA DO MODAL ---
-function openModal() {
-  ui.settingsModal.classList.remove("hidden");
-}
-
-function closeModal() {
-  ui.settingsModal.classList.add("hidden");
 }
 
 // --- FUNÇÕES AUXILIARES ---
 function showError(element, message) {
+  console.error("[LOBBY] Erro de UI:", message);
   element.style.borderColor = "red";
   element.placeholder = message;
   element.focus();
-
   setTimeout(() => {
     element.style.borderColor = "";
     element.placeholder = "";
@@ -87,28 +64,34 @@ function showError(element, message) {
 }
 
 /**
- * Valida o nome do jogador e redireciona para a sala de jogo.
- * @param {string} roomId O ID da sala para entrar.
+ * [FLUXO CORRIGIDO]
+ * A função agora salva os dados na sessão do navegador e redireciona imediatamente.
+ * A responsabilidade de emitir 'entrarNaSala' foi movida para loading.js.
  */
-function joinRoom(roomId) {
+function joinRoom(roomId, distancia = 700) {
+  console.log(
+    `[LOBBY] Preparando para entrar na sala '${roomId}' com distância ${distancia}km.`
+  );
   const playerName = ui.playerNameInput.value.trim();
-
   if (!playerName) {
     showError(ui.playerNameInput, "Digite seu nome para entrar!");
     return;
   }
 
-  // Armazena os dados no sessionStorage para usar na próxima página
+  // Salva os dados para a próxima página (loading.html) ler.
+  localStorage.setItem("playerName", playerName);
   sessionStorage.setItem("playerName", playerName);
   sessionStorage.setItem("roomId", roomId);
+  sessionStorage.setItem("roomDistance", distancia); // Salva a distância também
 
-  window.location.href = "espera-page.html"; // Redireciona para a tela de espera
+  // Redireciona para a página de carregamento.
+  console.log("[LOBBY] Redirecionando para loading.html...");
+  window.location.href = "../pages/loading.html";
 }
 
-// --- EVENT LISTENERS ---
-
-// Evento para o botão "Criar Sala"
+// --- EVENT LISTENERS (Ações do Usuário) ---
 ui.createRoomButton.addEventListener("click", () => {
+  console.log("[LOBBY] Botão 'Criar Sala' clicado.");
   const roomName = ui.roomNameInput.value.trim();
   if (!roomName) {
     showError(ui.roomNameInput, "Digite um nome para a sala!");
@@ -117,69 +100,65 @@ ui.createRoomButton.addEventListener("click", () => {
   joinRoom(roomName);
 });
 
-// (Opcional) Evento para o botão de Ajuda
-ui.helpButton.addEventListener("click", () => {
-  alert(
-    'Como Jogar:\n\n1. Digite seu nome de usuário.\n2. Para criar uma sala, digite o nome e clique em "Criar Sala".\n3. Para entrar, clique em "Entrar" na lista de salas.'
-  );
-});
-
-// Listeners do Modal
-ui.settingsButton.addEventListener("click", openModal);
-ui.closeModalButton.addEventListener("click", closeModal);
+ui.helpButton.addEventListener("click", () =>
+  ui.helpModal.classList.remove("hidden")
+);
+ui.settingsButton.addEventListener("click", () =>
+  ui.settingsModal.classList.remove("hidden")
+);
+ui.closeSettingsModalButton.addEventListener("click", () =>
+  ui.settingsModal.classList.add("hidden")
+);
 ui.settingsModal.addEventListener("click", (event) => {
-  // Fecha o modal apenas se o clique for no fundo (overlay)
-  if (event.target === ui.settingsModal) {
-    closeModal();
-  }
+  if (event.target === ui.settingsModal)
+    ui.settingsModal.classList.add("hidden");
 });
-
-// Listener para o controle de volume
-ui.volumeSlider.addEventListener("input", (event) => {
-  setVolume(event.target.value);
+ui.closeHelpModalButton.addEventListener("click", () =>
+  ui.helpModal.classList.add("hidden")
+);
+ui.helpModal.addEventListener("click", (event) => {
+  if (event.target === ui.helpModal) ui.helpModal.classList.add("hidden");
 });
-
-// Listener para iniciar a música com a primeira interação do usuário
+ui.volumeSlider.addEventListener("input", (event) =>
+  setVolume(event.target.value)
+);
 document.body.addEventListener(
   "click",
   () => {
-    if (musicas.lobby.paused) {
-      tocarMusicaLobby();
-    }
+    if (musicas.lobby.paused) tocarMusicaLobby();
   },
   { once: true }
 );
 
-// --- LÓGICA DO SOCKET.IO E INICIALIZAÇÃO ---
+// --- LÓGICA DO SOCKET.IO ---
+socket.on("connect", () => {
+  console.log(
+    "[LOBBY] Conectado ao servidor com sucesso! ID do Socket:",
+    socket.id
+  );
+});
 
-// Recebe a lista de salas abertas do servidor
 socket.on("listaDeSalas", (rooms) => {
+  console.log("[LOBBY] Recebida lista de salas:", rooms);
   ui.roomList.innerHTML = "";
-
   if (!rooms || rooms.length === 0) {
-    const emptyMessage = document.createElement("div");
-    emptyMessage.className = "room-item inactive";
-    emptyMessage.textContent = "Nenhuma sala aberta no momento...";
-    ui.roomList.appendChild(emptyMessage);
+    ui.roomList.innerHTML = `<div class="room-item inactive">Nenhuma sala aberta...</div>`;
     return;
   }
 
-  // Cria um item para cada sala na lista
   rooms.forEach((room) => {
     const roomItem = document.createElement("div");
     roomItem.className = "room-item";
-
-    const roomNameSpan = document.createElement("span");
-    roomNameSpan.textContent = `${room.id} (${room.playerCount}/${
-      room.maxPlayers || 5
-    })`;
-
+    const roomInfo = document.createElement("span");
+    roomInfo.textContent = `${room.id} (${room.playerCount}/5) - ${room.distancia}km`;
     const joinButton = document.createElement("button");
     joinButton.className = "join-button";
     joinButton.textContent = "Entrar";
-    joinButton.onclick = () => joinRoom(room.id);
-
-    roomItem.appendChild(roomNameSpan);
+    joinButton.onclick = () => {
+      console.log(`[LOBBY] Botão 'Entrar' clicado para a sala: ${room.id}`);
+      joinRoom(room.id, room.distancia);
+    };
+    roomItem.appendChild(roomInfo);
     roomItem.appendChild(joinButton);
     ui.roomList.appendChild(roomItem);
   });
@@ -187,31 +166,17 @@ socket.on("listaDeSalas", (rooms) => {
 
 // --- INICIALIZAÇÃO DA PÁGINA ---
 function inicializarLobby() {
-  // 1. Puxa o volume salvo do cache ou define um padrão (ex: 0.3)
+  console.log("[LOBBY] Inicializando o lobby...");
   const savedVolume = localStorage.getItem("gameVolume") || "0.3";
-
-  // 2. Define o valor inicial do slider e aplica o volume
   ui.volumeSlider.value = savedVolume;
   setVolume(savedVolume);
 
-  // 3. Solicita a lista de salas ao servidor
-  socket.emit("getRoomList");
+  const savedPlayerName = localStorage.getItem("playerName");
+  if (savedPlayerName) {
+    ui.playerNameInput.value = savedPlayerName;
+  }
 
-  // 4. Tenta tocar a música (pode ser bloqueado pelo navegador)
   tocarMusicaLobby();
 }
 
-// Roda a função de inicialização quando o DOM estiver pronto
 document.addEventListener("DOMContentLoaded", inicializarLobby);
-
-// --- LÓGICA DO SOCKET.IO ---
-
-// Quando o socket se conecta
-socket.on("connect", () => {
-  console.log("Conectado ao servidor Socket.IO");
-});
-
-// Quando o socket se desconecta
-socket.on("disconnect", () => {
-  console.log("Desconectado do servidor Socket.IO");
-});

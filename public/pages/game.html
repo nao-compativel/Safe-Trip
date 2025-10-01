@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="../style/jogo-page.css">
-    <title>Document</title>
+    <link rel="stylesheet" href="../style/game.css" />
+    <title>Safe Trip - Jogo</title>
   </head>
   <body>
     <div id="tela-jogo">
@@ -24,9 +24,7 @@
             <div id="segurancas-jogador-hud"></div>
           </div>
           <div id="controles-jogador">
-            <button id="btn-modo-descartar">
-              Descartar para Passar o Turno
-            </button>
+            <button id="btn-modo-descartar">Descartar Carta</button>
           </div>
         </div>
         <div id="mao-e-log">
@@ -41,5 +39,11 @@
         </div>
       </div>
     </div>
+
+    <div id="turno-notificacao" class="notificacao hidden">É a sua vez!</div>
+    <div id="erro-notificacao" class="notificacao erro hidden"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="../js/game.js"></script>
   </body>
 </html>

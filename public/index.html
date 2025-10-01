@@ -7,59 +7,81 @@
     <link rel="stylesheet" href="./style/loginpage.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
     <link
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Russo+One&display=swap"
       rel="stylesheet"
     />
   </head>
-
   <body>
-    <a href="https://discord.gg/mbnfnabsQ6">
-      <button class="social-button">🔗</button></a
-    >
+    <a href="https://discord.gg/mbnfnabsQ6" target="_blank">
+      <button class="social-button">🔗</button>
+    </a>
     <button class="settings-button">⚙️</button>
 
     <div class="background-overlay"></div>
     <main class="container">
-      <!--Card Esquerda-->
-
       <div class="card game-card">
         <h1 class="game-title">Safe Trip!</h1>
-
         <div class="input-group">
           <label for="playerName">Username</label>
           <input type="text" id="playerName" />
         </div>
-
         <div class="input-group">
           <label for="roomName">Nome da Sala</label>
           <input type="text" id="roomName" />
         </div>
-
         <button class="action-button">Criar Sala</button>
-        <button class="action-button">Ajuda(?)</button>
+        <button id="helpButton" class="action-button">Ajuda(?)</button>
       </div>
-
-      <!--Sala de Jogos-->
-
-      <!--Sala de Jogos-->
 
       <div class="card rooms-card">
         <h2 class="rooms-title">Salas Abertas</h2>
-        <div class="room-list">
-          <div class="room-item">
-            <span>Sala 1</span>
-          </div>
-          <div class="room-item">
-            <span>Sala 2</span>
-            <button class="join-button">Entrar</button>
-          </div>
-          <div class="room-item inactive"></div>
-        </div>
+        <div class="room-list"></div>
       </div>
     </main>
-    <script src="./socket.io/socket.io.js"></script>
+
+    <div id="settingsModal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Configurações</h2>
+          <span class="close-button">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div class="input-group volume-control">
+            <label for="volumeSlider">🔊 Volume da Música</label>
+            <input type="range" id="volumeSlider" min="0" max="1" step="0.01" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="helpModal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Como Jogar</h2>
+          <span class="close-button">&times;</span>
+        </div>
+        <div class="modal-body">
+          <p>
+            Seu objetivo é ser o primeiro a alcançar a distância final da
+            corrida!
+          </p>
+          <ol>
+            <li>Digite seu nome de usuário.</li>
+            <li>
+              Para <strong>criar uma sala</strong>, digite um nome para ela e
+              clique em "Criar Sala".
+            </li>
+            <li>
+              Para <strong>entrar em uma sala</strong> já existente, clique em
+              "Entrar" na lista de "Salas Abertas".
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
     <script src="./js/lobby.js"></script>
   </body>
 </html>

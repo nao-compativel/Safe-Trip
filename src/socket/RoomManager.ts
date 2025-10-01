@@ -12,10 +12,11 @@ class RoomManager {
   public getOrCreateRoom(id: string, distancia: number): GameRoom {
     let room = this.rooms.get(id);
     if (!room) {
-      // Usa a distância recebida ao criar uma nova sala
-      room = new GameRoom(id, distancia);
+      // Se a distância for inválida (undefined, null, 0), usa 700 como padrão.
+      const distanciaFinal = distancia || 700;
+      room = new GameRoom(id, distanciaFinal);
       this.rooms.set(id, room);
-      console.log(`Sala '${id}' criada com objetivo de ${distancia}km.`);
+      console.log(`Sala '${id}' criada com objetivo de ${distanciaFinal}km.`);
     }
     return room;
   }
