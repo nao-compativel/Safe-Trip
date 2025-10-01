@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Painel de Debug - Safe Trip</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        display: flex;
+        gap: 20px;
+      }
+      .panel {
+        padding: 10px;
+        border: 1px solid #ccc;
+      }
+      #gameState {
+        white-space: pre-wrap;
+        background: #f4f4f4;
+        padding: 10px;
+        max-height: 500px;
+        overflow-y: scroll;
+      }
+      .card-btn {
+        margin: 5px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="panel">
+      <h2>Conexão</h2>
+      <input
+        type="text"
+        id="playerName"
+        placeholder="Nome do Jogador"
+        value="Tester"
+      />
+      <input
+        type="text"
+        id="roomName"
+        placeholder="ID da Sala"
+        value="debug_room"
+      />
+      <button id="connectBtn">Conectar e Entrar</button>
+      <button id="startGameBtn">Forçar Início</button>
+      <hr />
+      <h2>Minha Mão</h2>
+      <div id="myHand"></div>
+      <hr />
+      <h2>Jogadores (Alvos)</h2>
+      <div id="playersTarget"></div>
+    </div>
+    <div class="panel">
+      <h2>Ações de Debug</h2>
+      <select id="cardToGive"></select>
+      <button id="giveCardBtn">Me Dar Carta</button>
+      <br /><br />
+      <button id="myTurnBtn">Forçar Meu Turno</button>
+    </div>
+    <div class="panel" style="flex-grow: 1">
+      <h2>Estado do Jogo (Game State)</h2>
+      <pre id="gameState"></pre>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="./js/debug.js"></script>
+  </body>
+</html>

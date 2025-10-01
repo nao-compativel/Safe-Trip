@@ -15,15 +15,66 @@ const ui = {
 
   // Card da direita
   roomList: document.querySelector(".room-list"),
+
+  // --- [INÍCIO] NOVOS ELEMENTOS DO MODAL ---
+  settingsButton: document.querySelector(".settings-button"),
+  settingsModal: document.getElementById("settingsModal"),
+  closeModalButton: document.querySelector(".close-button"),
+  volumeSlider: document.getElementById("volumeSlider"),
+  // --- [FIM] NOVOS ELEMENTOS DO MODAL ---
 };
 
-// --- FUNÇÕES AUXILIARES ---
+// --- CONTROLE DE MÚSICA E SOM ---
+const musicas = {
+  lobby: new Audio("../sounds/lobby_music.mp3"),
+};
 
 /**
- * Exibe uma notificação de erro simples para o usuário.
- * @param {HTMLElement} element O elemento do input que causou o erro.
- * @param {string} message A mensagem a ser exibida.
+ * Toca a música do lobby, respeitando o volume salvo.
  */
+function tocarMusicaLobby() {
+  const musicaLobby = musicas.lobby;
+  if (!musicaLobby) return;
+
+  Object.values(musicas).forEach((music) => music.pause()); // Para todas as outras
+
+  musicaLobby.loop = true;
+  musicaLobby.volume = ui.volumeSlider.value; // Usa o valor atual do slider
+  musicaLobby.play().catch(() => {
+    // Autoplay foi bloqueado, a música começará quando o usuário clicar na tela
+    console.warn(
+      "Navegador bloqueou autoplay. A música iniciará com a interação do usuário."
+    );
+  });
+}
+
+/**
+ * Define o volume de todas as músicas e salva a preferência.
+ * @param {number} volume - O nível do volume (entre 0 e 1).
+ */
+function setVolume(volume) {
+  const vol = parseFloat(volume);
+  if (isNaN(vol)) return;
+
+  // Aplica o volume a todas as instâncias de áudio
+  Object.values(musicas).forEach((music) => {
+    music.volume = vol;
+  });
+
+  // Salva a preferência no cache do navegador
+  localStorage.setItem("gameVolume", vol);
+}
+
+// --- LÓGICA DO MODAL ---
+function openModal() {
+  ui.settingsModal.classList.remove("hidden");
+}
+
+function closeModal() {
+  ui.settingsModal.classList.add("hidden");
+}
+
+// --- FUNÇÕES AUXILIARES ---
 function showError(element, message) {
   element.style.borderColor = "red";
   element.placeholder = message;
@@ -31,7 +82,7 @@ function showError(element, message) {
 
   setTimeout(() => {
     element.style.borderColor = "";
-    element.placeholder = ""; // Limpa o placeholder para não confundir
+    element.placeholder = "";
   }, 3000);
 }
 
@@ -51,8 +102,7 @@ function joinRoom(roomId) {
   sessionStorage.setItem("playerName", playerName);
   sessionStorage.setItem("roomId", roomId);
 
-  // Redireciona para a página do jogo/espera
-  window.location.href = "game.html"; // Certifique-se que o nome do arquivo está correto
+  window.location.href = "espera-page.html"; // Redireciona para a tela de espera
 }
 
 // --- EVENT LISTENERS ---
@@ -70,15 +120,41 @@ ui.createRoomButton.addEventListener("click", () => {
 // (Opcional) Evento para o botão de Ajuda
 ui.helpButton.addEventListener("click", () => {
   alert(
-    'Como Jogar:\n\n1. Digite seu nome de usuário.\n2. Para criar uma sala, digite o nome da sala e clique em "Criar Sala".\n3. Para entrar em uma sala existente, clique em "Entrar" na lista de "Salas Abertas".'
+    'Como Jogar:\n\n1. Digite seu nome de usuário.\n2. Para criar uma sala, digite o nome e clique em "Criar Sala".\n3. Para entrar, clique em "Entrar" na lista de salas.'
   );
 });
 
-// --- LÓGICA DO SOCKET.IO ---
+// Listeners do Modal
+ui.settingsButton.addEventListener("click", openModal);
+ui.closeModalButton.addEventListener("click", closeModal);
+ui.settingsModal.addEventListener("click", (event) => {
+  // Fecha o modal apenas se o clique for no fundo (overlay)
+  if (event.target === ui.settingsModal) {
+    closeModal();
+  }
+});
+
+// Listener para o controle de volume
+ui.volumeSlider.addEventListener("input", (event) => {
+  setVolume(event.target.value);
+});
+
+// Listener para iniciar a música com a primeira interação do usuário
+document.body.addEventListener(
+  "click",
+  () => {
+    if (musicas.lobby.paused) {
+      tocarMusicaLobby();
+    }
+  },
+  { once: true }
+);
+
+// --- LÓGICA DO SOCKET.IO E INICIALIZAÇÃO ---
 
 // Recebe a lista de salas abertas do servidor
 socket.on("listaDeSalas", (rooms) => {
-  ui.roomList.innerHTML = ""; // Limpa a lista atual
+  ui.roomList.innerHTML = "";
 
   if (!rooms || rooms.length === 0) {
     const emptyMessage = document.createElement("div");
@@ -109,5 +185,33 @@ socket.on("listaDeSalas", (rooms) => {
   });
 });
 
-// Solicita a lista de salas assim que a página carrega
-socket.emit("getRoomList");
+// --- INICIALIZAÇÃO DA PÁGINA ---
+function inicializarLobby() {
+  // 1. Puxa o volume salvo do cache ou define um padrão (ex: 0.3)
+  const savedVolume = localStorage.getItem("gameVolume") || "0.3";
+
+  // 2. Define o valor inicial do slider e aplica o volume
+  ui.volumeSlider.value = savedVolume;
+  setVolume(savedVolume);
+
+  // 3. Solicita a lista de salas ao servidor
+  socket.emit("getRoomList");
+
+  // 4. Tenta tocar a música (pode ser bloqueado pelo navegador)
+  tocarMusicaLobby();
+}
+
+// Roda a função de inicialização quando o DOM estiver pronto
+document.addEventListener("DOMContentLoaded", inicializarLobby);
+
+// --- LÓGICA DO SOCKET.IO ---
+
+// Quando o socket se conecta
+socket.on("connect", () => {
+  console.log("Conectado ao servidor Socket.IO");
+});
+
+// Quando o socket se desconecta
+socket.on("disconnect", () => {
+  console.log("Desconectado do servidor Socket.IO");
+});

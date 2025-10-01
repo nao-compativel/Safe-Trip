@@ -1,11 +1,9 @@
 // Em src/app.ts
-
 import express from "express";
 import * as http from "http";
 import { Server } from "socket.io";
 import path from "path";
 import { handleSocketEvents } from "./socket/events";
-import { roomManager } from "./socket/RoomManager";
 
 const app = express();
 const server = http.createServer(app);
@@ -17,11 +15,8 @@ io.on("connection", (socket) => {
   handleSocketEvents(io, socket);
 });
 
-// Envia um "pulso" com a lista de salas atualizada para todos a cada 1 segundos.
-// Isso garante que a lista de salas no lobby esteja sempre correta.
-setInterval(() => {
-  io.emit("listaDeSalas", roomManager.getPublicRooms());
-}, 2500);
+// O setInterval foi removido daqui para melhorar a eficiência.
+// A lista de salas agora é atualizada apenas quando necessário (eventos de entrar/sair/iniciar).
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
