@@ -43,59 +43,22 @@
 
       <!--Sala de Jogos-->
 
+      <!--Sala de Jogos-->
+
       <div class="card rooms-card">
         <h2 class="rooms-title">Salas Abertas</h2>
         <div class="room-list">
           <div class="room-item">
-            <span class="room-name">Sala Exemplo #1</span>
-            <span class="room-players">2/4</span>
+            <span>Sala 1</span>
+          </div>
+          <div class="room-item">
+            <span>Sala 2</span>
             <button class="join-button">Entrar</button>
           </div>
+          <div class="room-item inactive"></div>
         </div>
       </div>
     </main>
-    <!-- Modal de Configurações -->
-    <div id="settingsModal" class="modal-overlay hidden">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Configurações</h2>
-          <span class="close-button">&times;</span>
-        </div>
-        <div class="modal-body">
-          <div class="input-group volume-control">
-            <label for="volumeSlider">🔊 Volume da Música</label>
-            <input type="range" id="volumeSlider" min="0" max="1" step="0.01" />
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Modal de Ajuda -->
-    <div id="helpModal" class="modal-overlay hidden">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Como Jogar</h2>
-          <span class="close-button">&times;</span>
-        </div>
-        <div class="modal-body">
-          <p>
-            Seu objetivo é ser o primeiro a alcançar a distância final da
-            corrida!
-          </p>
-          <ol>
-            <li>Digite seu nome de usuário.</li>
-            <li>
-              Para <strong>criar uma sala</strong>, digite um nome para ela e
-              clique em "Criar Sala".
-            </li>
-            <li>
-              Para <strong>entrar em uma sala</strong> já existente, clique em
-              "Entrar" na lista de "Salas Abertas".
-            </li>
-          </ol>
-        </div>
-      </div>
-    </div>
-    <!-- Scripts -->
     <script src="./socket.io/socket.io.js"></script>
     <script src="./js/lobby.js"></script>
   </body>
