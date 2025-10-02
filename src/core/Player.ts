@@ -1,7 +1,8 @@
+// src/core/Player.ts
 import { Card, PerigoType, SegurancaType } from "./Card";
 
 export class Player {
-  id: string;
+  id: string; // Este será o socket.id, que mudará na reconexão
   nome: string;
   isBot: boolean;
   disconnected: boolean = false; // Essencial para a reconexão
@@ -22,14 +23,6 @@ export class Player {
 
   podeAndar(): boolean {
     return this.perigos_ativos.size === 0 && !this.precisa_do_siga;
-  }
-
-  adicionarSeguranca(seg: SegurancaType) {
-    this.segurancas_ativas.add(seg);
-    if (seg === "passagem_livre") {
-      this.limite_de_velocidade = false;
-      this.precisa_do_siga = false;
-    }
   }
 
   get publicState() {

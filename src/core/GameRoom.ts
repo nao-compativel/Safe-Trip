@@ -1,8 +1,8 @@
+// src/core/GameRoom.ts
 import { Player } from "./Player";
 import { Deck } from "./Deck";
 import { Card, PerigoType, SegurancaType, SolucaoType } from "./Card";
 
-type BotDifficulty = "FACIL" | "NORMAL" | "DIFICIL";
 const MAX_PLAYERS = 5;
 
 const MAPA_PROBLEMAS: Record<
@@ -74,79 +74,52 @@ export class GameRoom {
     }
   }
 
-  /**
-   * [CORREÇÃO 1] O método agora cancela o timer do turno se o jogador
-   * que está saindo for o jogador atual, evitando "timers zumbis".
-   */
-  removerJogador(id: string): boolean {
+  removerJogador(id: string) {
     const jogador = this.jogadores.get(id);
-    if (!jogador) return false;
-
-    const eraTurnoDele = this.ordemTurno[this.jogadorAtualIdx] === id;
-
-    if (eraTurnoDele) {
-      this.clearTurnTimer();
-    }
+    if (!jogador) return;
 
     this.jogadores.delete(id);
     this.onStateChange?.(`${jogador.nome} saiu da sala.`);
     const indexNaOrdem = this.ordemTurno.indexOf(id);
-    if (indexNaOrdem > -1) this.ordemTurno.splice(indexNaOrdem, 1);
-    if (this.estado === "JOGO" && this.ordemTurno.length > 0) {
-      if (this.jogadorAtualIdx > indexNaOrdem) this.jogadorAtualIdx--;
-      if (this.jogadorAtualIdx >= this.ordemTurno.length)
-        this.jogadorAtualIdx = 0;
+    if (indexNaOrdem > -1) {
+      this.ordemTurno.splice(indexNaOrdem, 1);
+      if (this.estado === "JOGO" && this.ordemTurno.length > 0) {
+        if (this.jogadorAtualIdx >= indexNaOrdem && this.jogadorAtualIdx > 0) {
+          this.jogadorAtualIdx--;
+        }
+      }
     }
-    return eraTurnoDele;
   }
 
   iniciarJogo() {
-    if (this.jogadores.size < 2 || this.estado === "JOGO") return;
+    if (this.jogadores.size < 1 || this.estado === "JOGO") return;
     this.estado = "JOGO";
     this.baralho = new Deck(this.jogadores.size);
-    this.ordemTurno = Array.from(this.jogadores.keys());
-    for (let i = this.ordemTurno.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [this.ordemTurno[i], this.ordemTurno[j]] = [
-        this.ordemTurno[j],
-        this.ordemTurno[i],
-      ];
-    }
+    this.ordemTurno = Array.from(this.jogadores.keys()).sort(
+      () => Math.random() - 0.5
+    );
+
     const coresCarros = ["🚗", "🚕", "🚙", "🏎️", "🚓"];
     this.ordemTurno.forEach((playerId, index) => {
       const jogador = this.jogadores.get(playerId);
       if (jogador) {
         jogador.carroEmoji = coresCarros[index % coresCarros.length];
-      }
-    });
-    this.jogadores.forEach((jogador) => {
-      for (let i = 0; i < 6; i++) {
-        const carta = this.baralho.comprar_carta();
-        if (carta) jogador.mao.push(carta);
+        for (let i = 0; i < 6; i++) {
+          const carta = this.baralho.comprar_carta();
+          if (carta) jogador.mao.push(carta);
+        }
       }
     });
     this.jogadorAtualIdx = -1;
     this.proximoTurno();
   }
 
-  /**
-   * [CORREÇÃO 2] O método agora tem uma "guarda" no início para impedir
-   * sua execução se não houver mais jogadores, evitando o crash.
-   */
   proximoTurno() {
     this.clearTurnTimer();
 
     if (this.ordemTurno.length === 0) {
-      console.log(
-        "[GameRoom] Fim de jogo: não há mais jogadores na ordem de turno."
-      );
       this.estado = "ENCERRADA";
       this.onStateChange?.("Jogo encerrado por falta de jogadores.");
-      return;
-    }
-
-    if (this.estado === "ENCERRADA") {
-      this.onStateChange?.();
       return;
     }
 
@@ -166,16 +139,27 @@ export class GameRoom {
     this.jogadorAtualIdx = (this.jogadorAtualIdx + 1) % this.ordemTurno.length;
     const proximoJogador = this.jogadores.get(
       this.ordemTurno[this.jogadorAtualIdx]
-    )!;
+    );
+
+    if (!proximoJogador) {
+      if (this.ordemTurno.length > 0) this.proximoTurno();
+      return;
+    }
 
     const novaCarta = this.baralho.comprar_carta();
     if (novaCarta) proximoJogador.mao.push(novaCarta);
 
     const progresso = proximoJogador.distancia / this.distanciaObjetivo;
     if (!proximoJogador.isBot) {
-      if (progresso >= 0.85) this.currentTurnDuration = 7000;
-      else if (progresso >= 0.65) this.currentTurnDuration = 10000;
-      else this.currentTurnDuration = 15000;
+      if (progresso >= 0.9) {
+        this.currentTurnDuration = 3000; // 3 segundos (Rush Final)
+      } else if (progresso >= 0.85) {
+        this.currentTurnDuration = 7000; // 7 segundos
+      } else if (progresso >= 0.65) {
+        this.currentTurnDuration = 10000; // 10 segundos
+      } else {
+        this.currentTurnDuration = 15000; // 15 segundos
+      }
     } else {
       this.currentTurnDuration = 2000;
     }
@@ -183,36 +167,42 @@ export class GameRoom {
     this.turnStartTime = Date.now();
     this.onStateChange(`É a vez de ${proximoJogador.nome}.`);
 
-    const timeoutCallback = () => {
+    this.turnTimer = setTimeout(() => {
       if (proximoJogador.isBot) {
         this.autoPlay(proximoJogador.id);
       } else {
         this.handleIdleHuman(proximoJogador.id);
       }
-    };
-    this.turnTimer = setTimeout(timeoutCallback, this.currentTurnDuration);
+    }, this.currentTurnDuration);
   }
 
   jogarCarta(
     socketId: string,
     indiceCarta: number,
     alvoId?: string
-  ): { success: boolean; message: string } {
+  ): { success: boolean; message: string; acao?: any } {
     if (socketId !== this.ordemTurno[this.jogadorAtualIdx]) {
+      console.warn(
+        `[JOGADA INVÁLIDA] Tentativa de jogada por ${
+          this.jogadores.get(socketId)?.nome
+        } fora do turno. Turno atual é de ${
+          this.jogadores.get(this.ordemTurno[this.jogadorAtualIdx])?.nome
+        }.`
+      );
       return { success: false, message: "Espere seu turno para jogar." };
     }
+
     const jogador = this.jogadores.get(socketId);
     if (!jogador) return { success: false, message: "Jogador não encontrado." };
     const carta = jogador.mao[indiceCarta];
     if (!carta) return { success: false, message: "Carta não encontrada." };
 
-    if (!jogador.isBot && carta.tipo !== "seguranca") {
-      this.clearTurnTimer();
-    }
-
+    this.clearTurnTimer();
     let msg = "";
+    let acaoParaEmitir: any = null;
+
     switch (carta.tipo) {
-      case "distancia":
+      case "distancia": {
         if (jogador.precisa_do_siga)
           return {
             success: false,
@@ -242,14 +232,15 @@ export class GameRoom {
         jogador.distancia += carta.valor as number;
         msg = `${jogador.nome} avança ${carta.valor} km! 🛣️`;
         break;
-      case "perigo":
+      }
+      case "perigo": {
         const alvo = this.jogadores.get(alvoId!);
-        if (!alvo)
-          return { success: false, message: "Escolha um alvo para atacar." };
+        if (!alvo) return { success: false, message: "Alvo inválido." };
         const perigo = carta.valor as PerigoType;
-        const imunidade = MAPA_PROBLEMAS[perigo].seguranca;
-        if (alvo.segurancas_ativas.has(imunidade)) {
-          msg = `Ataque bloqueado! ${alvo.nome} tem ${imunidade.replace(
+        const { solucao, seguranca } = MAPA_PROBLEMAS[perigo];
+
+        if (alvo.segurancas_ativas.has(seguranca)) {
+          msg = `Ataque bloqueado! ${alvo.nome} tem ${seguranca.replace(
             /_/g,
             " "
           )} ✨!`;
@@ -260,9 +251,20 @@ export class GameRoom {
           msg = `${jogador.nome} aplicou '${perigo.replace(/_/g, " ")}' em ${
             alvo.nome
           }! 😈`;
+
+          acaoParaEmitir = {
+            evento: "efeitoAplicado",
+            dados: {
+              atacante: { nome: jogador.nome, carroEmoji: jogador.carroEmoji },
+              alvoId: alvo.id,
+              perigo: perigo,
+              solucao: solucao,
+            },
+          };
         }
         break;
-      case "solucao":
+      }
+      case "solucao": {
         const solucao = carta.valor as SolucaoType;
         if (solucao === "siga") {
           if (!jogador.precisa_do_siga)
@@ -279,41 +281,30 @@ export class GameRoom {
               message: "Você não está com limite de velocidade.",
             };
           jogador.limite_de_velocidade = false;
-          jogador.precisa_do_siga = true;
           msg = `${jogador.nome} se livra do limite de velocidade (⚡)!`;
         } else {
-          const problemaCorrespondente = (
-            Object.keys(MAPA_PROBLEMAS) as PerigoType[]
-          ).find((p) => MAPA_PROBLEMAS[p].solucao === solucao);
-          if (
-            !problemaCorrespondente ||
-            !jogador.perigos_ativos.has(problemaCorrespondente)
-          )
+          const problema = (Object.keys(MAPA_PROBLEMAS) as PerigoType[]).find(
+            (p) => MAPA_PROBLEMAS[p].solucao === solucao
+          );
+          if (!problema || !jogador.perigos_ativos.has(problema))
             return {
               success: false,
-              message: `Você não tem o problema '${problemaCorrespondente?.replace(
+              message: `Você não tem o problema '${problema?.replace(
                 /_/g,
                 " "
               )}' para resolver.`,
             };
-          jogador.perigos_ativos.delete(problemaCorrespondente);
-          jogador.precisa_do_siga = true;
-          msg = `${
-            jogador.nome
-          } consertou o problema de '${problemaCorrespondente.replace(
+          jogador.perigos_ativos.delete(problema);
+          msg = `${jogador.nome} consertou o problema de '${problema.replace(
             /_/g,
             " "
           )}'! 🛠️`;
         }
         break;
-      case "seguranca":
-        this.clearTurnTimer();
+      }
+      case "seguranca": {
         const seguranca = carta.valor as SegurancaType;
         jogador.segurancas_ativas.add(seguranca);
-        msg = `Imunidade! ${jogador.nome} joga ${seguranca.replace(
-          /_/g,
-          " "
-        )} e joga de novo! ✨`;
         Object.entries(MAPA_PROBLEMAS).forEach(
           ([perigo, { seguranca: segurancaDoMapa }]) => {
             if (segurancaDoMapa === seguranca) {
@@ -321,78 +312,163 @@ export class GameRoom {
               if (perigoKey === "limite_velocidade")
                 jogador.limite_de_velocidade = false;
               if (perigoKey === "pare") jogador.precisa_do_siga = false;
-              if (jogador.perigos_ativos.has(perigoKey)) {
-                jogador.perigos_ativos.delete(perigoKey);
-              }
+              jogador.perigos_ativos.delete(perigoKey);
             }
           }
         );
-        if (seguranca === "passagem_livre") {
-          jogador.limite_de_velocidade = false;
-          jogador.precisa_do_siga = false;
-        }
-        jogador.mao.splice(indiceCarta, 1);
-        this.turnStartTime = Date.now();
-        this.onStateChange(msg);
-        const callback = () => {
-          if (jogador.isBot) {
-            this.autoPlay(jogador.id);
-          } else {
-            const humanCallback = () => this.handleIdleHuman(jogador.id);
-            this.turnTimer = setTimeout(
-              humanCallback,
-              this.currentTurnDuration
-            );
-          }
+        msg = `${jogador.nome} joga ${seguranca.replace(
+          /_/g,
+          " "
+        )} e ganha imunidade! ✨ (Joga de novo)`;
+        acaoParaEmitir = {
+          evento: "cartaSegurancaJogada",
+          dados: {
+            jogador: { nome: jogador.nome, carroEmoji: jogador.carroEmoji },
+            carta: { valor: seguranca },
+          },
         };
-        if (jogador.isBot) setTimeout(callback, 1000);
-        else callback();
-        return { success: true, message: msg };
+        this.baralho.descarte.push(jogador.mao.splice(indiceCarta, 1)[0]);
+        this.onStateChange(msg);
+        this.turnStartTime = Date.now();
+        this.turnTimer = setTimeout(() => {
+          if (jogador.isBot) this.autoPlay(socketId);
+          else this.handleIdleHuman(socketId);
+        }, this.currentTurnDuration);
+        return { success: true, message: msg, acao: acaoParaEmitir };
+      }
     }
 
     this.baralho.descarte.push(jogador.mao.splice(indiceCarta, 1)[0]);
+    this.onStateChange(msg);
     this.proximoTurno();
-    return { success: true, message: msg };
+    return { success: true, message: msg, acao: acaoParaEmitir };
   }
 
-  descartarCarta(
-    socketId: string,
-    indiceCarta: number
-  ): { success: boolean; message: string } {
+  descartarCarta(socketId: string, indiceCarta: number) {
     if (socketId !== this.ordemTurno[this.jogadorAtualIdx]) {
-      return { success: false, message: "Espere seu turno para jogar." };
+      return;
     }
     const jogador = this.jogadores.get(socketId);
-    if (!jogador || indiceCarta >= jogador.mao.length)
-      return { success: false, message: "Carta inválida." };
-    if (!jogador.isBot) this.clearTurnTimer();
+    if (!jogador || !jogador.mao[indiceCarta]) return;
+
+    this.clearTurnTimer();
     const cartaDescartada = jogador.mao.splice(indiceCarta, 1)[0];
     this.baralho.descarte.push(cartaDescartada);
-    const msg = `${jogador.nome} descartou ${String(
-      cartaDescartada.valor
-    ).replace(/_/g, " ")}.`;
+    this.onStateChange(`${jogador.nome} descartou uma carta.`);
     this.proximoTurno();
-    return { success: true, message: msg };
+  }
+
+  public forceTurnFor(playerId: string): boolean {
+    if (this.estado !== "JOGO") return false;
+    const playerIndex = this.ordemTurno.indexOf(playerId);
+    if (playerIndex === -1) return false;
+
+    this.clearTurnTimer();
+    this.jogadorAtualIdx = playerIndex - 1;
+    if (this.jogadorAtualIdx < 0) {
+      this.jogadorAtualIdx = this.ordemTurno.length - 1;
+    }
+    this.proximoTurno();
+    return true;
   }
 
   private handleIdleHuman(playerId: string) {
+    this.clearTurnTimer();
+    if (playerId !== this.ordemTurno[this.jogadorAtualIdx]) {
+      return;
+    }
     const jogador = this.jogadores.get(playerId);
-    if (!jogador || jogador.mao.length === 0) {
+    if (!jogador) {
       this.proximoTurno();
       return;
     }
     this.onStateChange(
       `${jogador.nome} não jogou a tempo! Descartando uma carta...`
     );
-    let indexToDiscard = jogador.mao.findIndex(
-      (c) =>
-        c.tipo === "distancia" &&
-        jogador.distancia + (c.valor as number) > this.distanciaObjetivo
-    );
-    if (indexToDiscard === -1)
-      indexToDiscard = jogador.mao.findIndex((c) => c.tipo === "distancia");
-    if (indexToDiscard === -1) indexToDiscard = 0;
-    this.descartarCarta(playerId, indexToDiscard);
+    if (jogador.mao.length > 0) {
+      const cartaDescartada = jogador.mao.splice(0, 1)[0];
+      this.baralho.descarte.push(cartaDescartada);
+    }
+    this.proximoTurno();
+  }
+
+  private autoPlay(playerId: string) {
+    const jogador = this.jogadores.get(playerId);
+    if (
+      !jogador ||
+      !jogador.isBot ||
+      playerId !== this.ordemTurno[this.jogadorAtualIdx]
+    ) {
+      return;
+    }
+    setTimeout(() => {
+      if (
+        this.estado !== "JOGO" ||
+        playerId !== this.ordemTurno[this.jogadorAtualIdx]
+      )
+        return;
+      if (jogador.mao.length === 0) {
+        this.proximoTurno();
+        return;
+      }
+      let acao:
+        | { tipo: "JOGAR"; indice: number; alvoId?: string }
+        | { tipo: "DESCARTAR"; indice: number }
+        | null = null;
+      if (!jogador.podeAndar()) {
+        if (jogador.precisa_do_siga) {
+          const index = jogador.mao.findIndex((c) => c.valor === "siga");
+          if (index > -1) acao = { tipo: "JOGAR", indice: index };
+        } else {
+          const problema = Array.from(jogador.perigos_ativos)[0];
+          const solucao = MAPA_PROBLEMAS[problema]?.solucao;
+          if (solucao) {
+            const index = jogador.mao.findIndex((c) => c.valor === solucao);
+            if (index > -1) acao = { tipo: "JOGAR", indice: index };
+          }
+        }
+      }
+      if (!acao) {
+        const index = jogador.mao.findIndex((c) => c.tipo === "seguranca");
+        if (index > -1) acao = { tipo: "JOGAR", indice: index };
+      }
+      if (!acao && jogador.podeAndar()) {
+        const melhoresCartasDistancia = jogador.mao
+          .map((c, i) => ({ ...c, originalIndex: i }))
+          .filter(
+            (c) =>
+              c.tipo === "distancia" &&
+              (!jogador.limite_de_velocidade || (c.valor as number) <= 50) &&
+              jogador.distancia + (c.valor as number) <= this.distanciaObjetivo
+          )
+          .sort((a, b) => (b.valor as number) - (a.valor as number));
+        if (melhoresCartasDistancia.length > 0) {
+          acao = {
+            tipo: "JOGAR",
+            indice: melhoresCartasDistancia[0].originalIndex,
+          };
+        }
+      }
+      if (!acao) {
+        const indexPerigo = jogador.mao.findIndex((c) => c.tipo === "perigo");
+        if (indexPerigo > -1) {
+          const alvos = Array.from(this.jogadores.values())
+            .filter((p) => p.id !== playerId && !p.isBot)
+            .sort((a, b) => b.distancia - a.distancia);
+          if (alvos.length > 0) {
+            acao = { tipo: "JOGAR", indice: indexPerigo, alvoId: alvos[0].id };
+          }
+        }
+      }
+      if (!acao) {
+        acao = { tipo: "DESCARTAR", indice: 0 };
+      }
+      if (acao.tipo === "JOGAR") {
+        this.jogarCarta(playerId, acao.indice, acao.alvoId);
+      } else if (acao.tipo === "DESCARTAR") {
+        this.descartarCarta(playerId, acao.indice);
+      }
+    }, 1000 + Math.random() * 1000);
   }
 
   private clearTurnTimer() {
@@ -400,116 +476,6 @@ export class GameRoom {
       clearTimeout(this.turnTimer);
       this.turnTimer = null;
     }
-  }
-
-  autoPlay(playerId: string) {
-    const jogador = this.jogadores.get(playerId);
-    if (
-      !jogador ||
-      !jogador.isBot ||
-      playerId !== this.ordemTurno[this.jogadorAtualIdx] ||
-      this.estado !== "JOGO"
-    )
-      return;
-    this.onStateChange(`Bot ${jogador.nome} está jogando...`);
-    setTimeout(() => {
-      if (jogador.mao.length === 0) {
-        this.proximoTurno();
-        return;
-      }
-      let difficulty: BotDifficulty = "NORMAL";
-      const humanPlayer = Array.from(this.jogadores.values()).find(
-        (p) => !p.isBot
-      );
-      if (humanPlayer) {
-        if (humanPlayer.distancia > jogador.distancia + 200)
-          difficulty = "DIFICIL";
-        else if (jogador.distancia > humanPlayer.distancia + 200)
-          difficulty = "FACIL";
-      }
-      let acaoParaExecutar: {
-        tipo: "JOGAR";
-        indice: number;
-        alvoId?: string;
-      } | null = null;
-      const safetyCardIndex = jogador.mao.findIndex(
-        (c) => c.tipo === "seguranca"
-      );
-      if (safetyCardIndex > -1) {
-        if (!(difficulty === "FACIL" && Math.random() < 0.5))
-          acaoParaExecutar = { tipo: "JOGAR", indice: safetyCardIndex };
-      }
-      if (!acaoParaExecutar) {
-        const problemas = Array.from(jogador.perigos_ativos);
-        if (problemas.length > 0) {
-          const index = jogador.mao.findIndex(
-            (c) =>
-              c.tipo === "solucao" &&
-              MAPA_PROBLEMAS[problemas[0]].solucao === c.valor
-          );
-          if (index > -1) acaoParaExecutar = { tipo: "JOGAR", indice: index };
-        }
-        if (!acaoParaExecutar && jogador.limite_de_velocidade) {
-          const index = jogador.mao.findIndex(
-            (c) => c.valor === "fim_limite_velocidade"
-          );
-          if (index > -1) acaoParaExecutar = { tipo: "JOGAR", indice: index };
-        }
-        if (!acaoParaExecutar && jogador.precisa_do_siga) {
-          const index = jogador.mao.findIndex((c) => c.valor === "siga");
-          if (index > -1) acaoParaExecutar = { tipo: "JOGAR", indice: index };
-        }
-      }
-      if (!acaoParaExecutar) {
-        const attackCardIndex = jogador.mao.findIndex(
-          (c) => c.tipo === "perigo"
-        );
-        if (attackCardIndex > -1) {
-          const alvosPotenciais = Array.from(this.jogadores.values()).filter(
-            (p) => !p.isBot && p.id !== playerId
-          );
-          if (alvosPotenciais.length > 0) {
-            const alvoFinal = alvosPotenciais.sort(
-              (a, b) => b.distancia - a.distancia
-            )[0];
-            if (alvoFinal) {
-              acaoParaExecutar = {
-                tipo: "JOGAR",
-                indice: attackCardIndex,
-                alvoId: alvoFinal.id,
-              };
-            }
-          }
-        }
-      }
-      if (!acaoParaExecutar && jogador.podeAndar()) {
-        const cartasDistancia = jogador.mao
-          .map((c, i) => ({ ...c, originalIndex: i }))
-          .filter(
-            (c) =>
-              c.tipo === "distancia" &&
-              jogador.distancia + (c.valor as number) <=
-                this.distanciaObjetivo &&
-              (!jogador.limite_de_velocidade || (c.valor as number) <= 50)
-          )
-          .sort((a, b) => (b.valor as number) - (a.valor as number));
-        if (cartasDistancia.length > 0)
-          acaoParaExecutar = {
-            tipo: "JOGAR",
-            indice: cartasDistancia[0].originalIndex,
-          };
-      }
-      if (acaoParaExecutar) {
-        this.jogarCarta(
-          playerId,
-          acaoParaExecutar.indice,
-          acaoParaExecutar.alvoId
-        );
-      } else {
-        let indexToDiscard = 0;
-        this.descartarCarta(playerId, indexToDiscard);
-      }
-    }, 1000);
   }
 
   getStateFor(socketId: string) {

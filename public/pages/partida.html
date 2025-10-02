@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Safe Trip - Partida</title>
+    <link rel="stylesheet" href="../style/game.css" />
+    <link rel="stylesheet" href="../style/loading.css" />
+  </head>
+  <body>
+    <div id="tela-espera">
+      <h2>Sala: <span id="nome-sala-espera">Carregando...</span></h2>
+      <h3>Jogadores na sala:</h3>
+      <ul id="lista-jogadores-espera"></ul>
+      <button id="btn-iniciar-jogo">Iniciar Jogo</button>
+    </div>
+
+    <div id="tela-jogo" class="hidden">
+      <div id="oponentes"></div>
+      <div id="pista-container">
+        <div class="linha-chegada"></div>
+      </div>
+      <div id="area-jogador">
+        <div id="hud-jogador">
+          <div id="timer-bar-container">
+            <div id="timer-bar-inner"></div>
+          </div>
+          <h3 id="nome-jogador-hud"></h3>
+          <div class="hud-info">
+            <p>Distância: <span id="distancia-jogador-hud">0</span> km</p>
+            <div id="perigos-jogador-hud"></div>
+            <div id="segurancas-jogador-hud"></div>
+          </div>
+          <div id="descarte-dropzone">
+            <p>🗑️ Arraste aqui para Descartar</p>
+          </div>
+        </div>
+        <div id="mao-e-log">
+          <div id="mao-container">
+            <h2>Sua Mão</h2>
+            <div id="mao-jogador"></div>
+          </div>
+          <div id="log-jogo-container">
+            <h2>Histórico</h2>
+            <div id="log-jogo"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="animacao-ataque" class="hidden">
+      <span id="atacante-emoji"></span>
+      <span id="perigo-emoji"></span>
+      <span id="alvo-emoji">🚙</span>
+    </div>
+    <div id="turno-notificacao" class="notificacao hidden">É a sua vez!</div>
+    <div id="erro-notificacao" class="notificacao erro hidden"></div>
+    <div id="efeito-notificacao-container"></div>
+    <div id="animacao-global" class="hidden">
+      <div class="conteudo">
+        <span id="global-jogador-emoji"></span>
+        <span id="global-carta-emoji"></span>
+        <h3 id="global-carta-nome"></h3>
+      </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="../js/partida.js"></script>
+  </body>
+</html>

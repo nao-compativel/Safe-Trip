@@ -291,3 +291,41 @@ body {
 .volume-control input[type="range"] {
   flex-grow: 1;
 }
+/* Container para o select customizado */
+.input-group.custom-select {
+  position: relative;
+}
+
+/* Estilo base do select, parecido com o input */
+.input-group select {
+  width: 100%;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid #4a4a6a;
+  border-radius: 8px;
+  color: #f0f0f0;
+  font-size: 1em;
+  box-sizing: border-box;
+  -webkit-appearance: none; /* Remove a aparência padrão no Chrome/Safari */
+  -moz-appearance: none; /* Remove a aparência padrão no Firefox */
+  appearance: none;
+  cursor: pointer;
+}
+
+.input-group select:focus {
+  outline: none;
+  border-color: #8477ed;
+  box-shadow: 0 0 10px rgba(132, 119, 237, 0.5);
+}
+
+/* Seta customizada para o select */
+.input-group.custom-select::after {
+  content: "▼";
+  font-size: 1.2em;
+  color: #8477ed;
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none; /* Permite que o clique passe para o select */
+}

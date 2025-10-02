@@ -184,28 +184,21 @@ input {
 
 .oponente {
   background-color: var(--cor-container-transparente);
-
   padding: 8px;
-
   border-radius: 12px;
-
   text-align: center;
-
   flex: 1;
-
   min-width: 160px;
-
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-
   transition: all 0.6s ease;
+  border: 4px solid transparent; /* <-- LINHA ADICIONADA */
 }
 
 .oponente.turno {
-  border: 4px solid var(--cor-destaque);
-
+  border-color: var(
+    --cor-destaque
+  ); /* <-- PROPRIEDADE ALTERADA DE 'border' PARA 'border-color' */
   box-shadow: 0 0 20px var(--cor-destaque);
-
-  transform: scale(1.01);
 }
 
 .oponente p {
@@ -786,4 +779,485 @@ input {
   to {
     box-shadow: 0 0 15px #ffd700, 0 0 25px #ffd700, 0 0 35px #f0e68c;
   }
+}
+/* Adicione no final do seu arquivo game.css */
+
+#efeito-notificacao-container {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none; /* Permite clicar através do container */
+}
+
+.notificacao-efeito {
+  padding: 12px 20px;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 1.1em;
+  font-weight: bold;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  animation: fadeInOut 4s ease-in-out forwards;
+  opacity: 0;
+}
+
+.notificacao-efeito.perigo {
+  background-color: #ff6347; /* Vermelho Tomate */
+  border: 2px solid #fff;
+}
+
+.notificacao-efeito.seguranca {
+  background-color: #ffd700; /* Dourado */
+  color: #333;
+  border: 2px solid #483d8b;
+}
+
+.notificacao-efeito.info {
+  background-color: #6a5acd; /* Roxo */
+  border: 2px solid #fff;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  85% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+/* Estilos para as novas notificações flutuantes */
+#efeito-notificacao-container {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none; /* Permite clicar através do container */
+}
+
+.notificacao-efeito {
+  padding: 12px 20px;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 1.1em;
+  font-weight: bold;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  animation: fadeInOut 4s ease-in-out forwards;
+  opacity: 0;
+}
+
+.notificacao-efeito.perigo {
+  background-color: #ff6347; /* Vermelho Tomate */
+  border: 2px solid #fff;
+}
+
+.notificacao-efeito.seguranca {
+  background-color: #ffd700; /* Dourado */
+  color: #333;
+  border: 2px solid #483d8b;
+}
+
+.notificacao-efeito.info {
+  background-color: #6a5acd; /* Roxo */
+  border: 2px solid #fff;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  85% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+/* Estilos para os ícones de efeito dos oponentes */
+.oponente-efeitos {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 5px;
+  height: 24px; /* Altura fixa para evitar que o layout pule */
+}
+
+.efeito-icone {
+  font-size: 1.2em;
+  line-height: 1;
+}
+
+#modal-alvo {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 3000;
+  gap: 15px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+#modal-alvo h2 {
+  color: var(--cor-destaque);
+  text-shadow: 2px 2px #000;
+  margin: 0 0 10px 0;
+  font-size: 2em;
+}
+
+#modal-alvo .alvo-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+}
+
+#modal-alvo button {
+  font-size: 1.2em;
+  padding: 12px 25px;
+  min-width: 150px;
+  background-color: var(--cor-container);
+  color: var(--cor-texto);
+  border: 2px solid var(--cor-texto);
+}
+
+#modal-alvo button.cancelar {
+  background-color: #a9a9a9; /* DarkGray */
+  color: #333;
+  border-color: #333;
+}
+/* Adicione no final de style/game.css */
+
+#animacao-ataque {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 20px 40px;
+  border-radius: 20px;
+  pointer-events: none;
+}
+
+#animacao-ataque.show {
+  animation: zoomFadeOut 2.5s ease-in-out forwards;
+}
+
+#animacao-ataque span {
+  font-size: 5em;
+  text-shadow: 0 0 15px #fff;
+}
+
+@keyframes zoomFadeOut {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 1;
+  }
+  80% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0;
+  }
+}
+
+#descarte-dropzone {
+  margin-top: auto; /* Empurra a zona para o final do HUD */
+  padding: 15px;
+  border: 3px dashed #aaa;
+  border-radius: 10px;
+  text-align: center;
+  color: #ccc;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Estilo quando uma carta está sendo arrastada por cima */
+#descarte-dropzone.drag-over {
+  background-color: rgba(255, 100, 100, 0.3);
+  border-color: #ff6347;
+  color: #fff;
+  transform: scale(1.05);
+}
+
+#descarte-dropzone p {
+  margin: 0;
+  pointer-events: none; /* Garante que o evento 'drop' seja no div e não no parágrafo */
+}
+
+/* Estilo para a carta que está sendo arrastada */
+.carta.dragging {
+  opacity: 0.4;
+  transform: scale(0.9);
+}
+
+/* Adicione no final de game.css */
+
+/* Animação da carta voando para a lixeira */
+@keyframes flyToDiscard {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--translateX), var(--translateY)) scale(0.2)
+      rotate(30deg);
+    opacity: 0;
+  }
+}
+
+.card-clone {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  animation: flyToDiscard 0.6s ease-in forwards;
+}
+
+/* Borda vermelha para cartas que não podem ser jogadas */
+.carta.carta-invalida {
+  border: 3px solid #e74c3c;
+  box-shadow: 0 0 15px rgba(231, 76, 60, 0.7);
+  filter: grayscale(60%) brightness(0.8);
+  cursor: not-allowed;
+}
+
+.carta.carta-invalida:hover {
+  transform: none; /* Impede o efeito de hover em cartas inválidas */
+}
+/* Adicione este bloco de CSS ao final do seu arquivo style/game.css */
+#animacao-global {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 6000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+#animacao-global.show {
+  opacity: 1;
+}
+#animacao-global .conteudo {
+  text-align: center;
+  transform: scale(0.7);
+  animation: global-anim 2.5s ease-in-out forwards;
+}
+#animacao-global .conteudo span {
+  display: block;
+  font-size: 6em;
+  text-shadow: 0 0 25px gold, 0 0 40px gold;
+}
+#animacao-global .conteudo h3 {
+  font-family: "Russo One", sans-serif;
+  font-size: 2.5em;
+  color: #ffd700;
+  margin: 10px 0 0 0;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px #000;
+}
+@keyframes global-anim {
+  0% {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  20% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+}
+
+/* Adicione no final de style/game.css */
+.hud-hint {
+  font-size: 0.8em;
+  color: #ccc;
+  font-style: italic;
+  margin-left: 8px;
+}
+
+/* --- FUNDO DINÂMICO --- */
+/* A transição suave da cor de fundo */
+.fase-jogo body {
+  transition: background-color 1.5s ease-in-out;
+}
+
+/* Cores para cada fase do jogo */
+body.fase-alerta {
+  background-color: #583c7d; /* Um roxo um pouco mais tenso */
+}
+body.fase-perigo {
+  background-color: #6d3b5b; /* Começando a ficar avermelhado */
+}
+body.fase-final {
+  background-color: #8b0000; /* Vermelho escuro para o final */
+}
+
+/* --- MODAL DE FIM DE JOGO --- */
+#modal-fim-jogo .modal-content {
+  text-align: center;
+  border: 4px solid #fff;
+  box-shadow: 0 0 30px #000;
+  transition: all 0.3s ease-in-out;
+}
+
+#modal-fim-jogo h2 {
+  font-family: "Russo One", sans-serif;
+  font-size: 2.5em;
+  margin-top: 0;
+}
+
+#modal-fim-jogo p {
+  font-size: 1.2em;
+  margin-bottom: 30px;
+}
+
+#modal-fim-jogo button {
+  font-size: 1.2em;
+  padding: 12px 30px;
+}
+
+#modal-fim-jogo {
+  z-index: 10000; /* Um valor bem alto para garantir que fique por cima de tudo */
+}
+
+/* Estilo de Triunfo */
+#modal-fim-jogo .vitoria {
+  border-color: #ffd700;
+  box-shadow: 0 0 40px #ffd700;
+}
+#modal-fim-jogo .vitoria h2 {
+  color: #ffd700;
+}
+
+/* Estilo de Derrota */
+#modal-fim-jogo .derrota {
+  border-color: #e74c3c;
+  box-shadow: 0 0 40px #e74c3c;
+}
+#modal-fim-jogo .derrota h2 {
+  color: #e74c3c;
+}
+/* Estilo de Desconexão */
+#modal-fim-jogo .desconexao {
+  border-color: #aaa;
+  box-shadow: 0 0 40px #aaa;
+}
+
+@keyframes playCardAnimation {
+  0% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2) translateY(-20vh); /* Sobe 20% da altura da tela */
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.5) translateY(-30vh);
+    opacity: 0;
+  }
+}
+
+/*
+  Classe aplicada ao clone da carta para a animação.
+  É 'fixed' para flutuar sobre todos os outros elementos.
+*/
+.card-playing-animation {
+  position: fixed;
+  z-index: 9998; /* Um z-index alto, mas abaixo dos modais */
+  pointer-events: none;
+  animation: playCardAnimation 0.8s ease-in-out forwards;
+}
+
+/* Esconde a carta original na mão durante a animação do seu clone */
+#mao-jogador .card.hidden-by-anim {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.carro-jogador {
+  position: absolute;
+  /* ... outros estilos ... */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/*
+  Estilo para o emoji de reação que aparece sobre o carro.
+*/
+.emoji-reacao {
+  position: absolute;
+  top: -25px; /* Posição acima do carro */
+  font-size: 1.4em;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+  pointer-events: none;
+  z-index: 11;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/*
+  Classe 'show' que ativa a animação de aparição do emoji.
+*/
+.emoji-reacao.show {
+  opacity: 1;
+  transform: translateY(0);
 }

@@ -6,16 +6,15 @@ const roomNameInput = document.getElementById("roomName");
 const connectBtn = document.getElementById("connectBtn");
 const startGameBtn = document.getElementById("startGameBtn");
 const myHandDiv = document.getElementById("myHand");
-const playersTargetDiv = document.getElementById("playersTarget");
+const playersInfoDiv = document.getElementById("playersInfo");
 const gameStatePre = document.getElementById("gameState");
 const giveCardBtn = document.getElementById("giveCardBtn");
 const cardToGiveSelect = document.getElementById("cardToGive");
 const myTurnBtn = document.getElementById("myTurnBtn");
 
 let myId = null;
-let oponentes = [];
 
-// Lista de todas as cartas possíveis para o dropdown
+// Lista de cartas
 const ALL_CARDS = [
   { tipo: "distancia", valor: 25 },
   { tipo: "distancia", valor: 50 },
@@ -52,18 +51,14 @@ connectBtn.addEventListener("click", () => {
     distancia: 700,
   });
 });
-
 startGameBtn.addEventListener("click", () => {
   socket.emit("iniciarJogo", roomNameInput.value);
 });
-
 giveCardBtn.addEventListener("click", () => {
-  const card = JSON.parse(cardToGiveSelect.value);
-  socket.emit("debug:giveCard", { card }); // Evento customizado de debug
+  socket.emit("debug:giveCard", { card: JSON.parse(cardToGiveSelect.value) });
 });
-
 myTurnBtn.addEventListener("click", () => {
-  socket.emit("debug:forceMyTurn"); // Evento customizado de debug
+  socket.emit("debug:forceMyTurn");
 });
 
 // Listeners do Socket
@@ -73,36 +68,79 @@ socket.on("connect", () => {
 });
 
 socket.on("updateState", (state) => {
+  if (!state) return;
   gameStatePre.textContent = JSON.stringify(state, null, 2);
 
-  // Atualiza a mão
-  myHandDiv.innerHTML = "<h3>Minha Mão:</h3>";
-  state.me.mao.forEach((card, index) => {
-    const btn = document.createElement("button");
-    btn.className = "card-btn";
-    btn.textContent = `${card.tipo} - ${card.valor}`;
-    btn.onclick = () => {
-      if (card.tipo === "perigo") {
-        const targetId = document.querySelector(
-          'input[name="target"]:checked'
-        )?.value;
-        if (!targetId) return alert("Selecione um alvo!");
-        socket.emit("jogarCarta", { indiceCarta: index, alvoId: targetId });
-      } else {
-        socket.emit("jogarCarta", { indiceCarta: index });
-      }
-    };
-    myHandDiv.appendChild(btn);
-  });
+  // Atualiza Minha Mão
+  myHandDiv.innerHTML = "";
+  if (state.me && state.me.mao) {
+    state.me.mao.forEach((card, index) => {
+      const cardDiv = document.createElement("div");
+      cardDiv.className = "card-info";
+      cardDiv.innerHTML = `<span>${card.tipo} - ${card.valor}</span>`;
 
-  // Atualiza lista de alvos
-  oponentes = state.oponentes;
-  playersTargetDiv.innerHTML = "<h3>Alvos:</h3>";
-  oponentes.forEach((p) => {
-    playersTargetDiv.innerHTML += `
-            <label>
-                <input type="radio" name="target" value="${p.id}"> ${p.nome}
-            </label><br>
-        `;
+      const actionsDiv = document.createElement("div");
+      actionsDiv.className = "card-actions";
+
+      const playBtn = document.createElement("button");
+      playBtn.textContent = "Jogar";
+      playBtn.onclick = () => {
+        if (card.tipo === "perigo") {
+          const oponentesIds = state.oponentes.map((p) => p.id).join(" | ");
+          const targetId = prompt(
+            `Escolha o ID do alvo para a carta ${card.valor}:\nAlvos possíveis: ${oponentesIds}`,
+            state.oponentes[0]?.id || ""
+          );
+          if (targetId)
+            socket.emit("jogarCarta", { indiceCarta: index, alvoId: targetId });
+        } else {
+          socket.emit("jogarCarta", { indiceCarta: index });
+        }
+      };
+
+      const discardBtn = document.createElement("button");
+      discardBtn.textContent = "Descartar";
+      discardBtn.onclick = () => {
+        socket.emit("descartarCarta", { indiceCarta: index });
+      };
+
+      actionsDiv.appendChild(playBtn);
+      actionsDiv.appendChild(discardBtn);
+      cardDiv.appendChild(actionsDiv);
+      myHandDiv.appendChild(cardDiv);
+    });
+  }
+
+  // Atualiza a lista de jogadores
+  playersInfoDiv.innerHTML = "";
+  const allPlayers = state.me
+    ? [state.me, ...state.oponentes]
+    : [...state.oponentes];
+  allPlayers.forEach((p) => {
+    const playerDiv = document.createElement("div");
+    playerDiv.className = "player-info";
+    let turnIndicator =
+      state.jogadorAtualId === p.id ? " <strong>(TURNO ATUAL)</strong>" : "";
+    playerDiv.innerHTML = `
+        <strong>${p.nome} ${
+      p.id === myId ? "(Eu)" : ""
+    }</strong>${turnIndicator}<br>
+        ID: <code>${p.id}</code><br>
+        Dist: ${p.distancia} km | Cartas: ${p.cartasNaMao}<br>
+        Perigos: ${p.perigos_ativos.join(", ") || "Nenhum"}<br>
+        Seguranças: ${p.segurancas_ativas.join(", ") || "Nenhum"}<br>
+        Parado: ${p.precisa_do_siga} | Lento: ${p.limite_de_velocidade}
+    `;
+    playersInfoDiv.appendChild(playerDiv);
+  });
+});
+
+socket.on("listaJogadores", (jogadores) => {
+  playersInfoDiv.innerHTML = "";
+  jogadores.forEach((p) => {
+    const playerDiv = document.createElement("div");
+    playerDiv.className = "player-info";
+    playerDiv.innerHTML = `<strong>${p.nome}</strong><br>ID: <code>${p.id}</code>`;
+    playersInfoDiv.appendChild(playerDiv);
   });
 });

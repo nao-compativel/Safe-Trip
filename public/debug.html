@@ -7,48 +7,68 @@
       body {
         font-family: sans-serif;
         display: flex;
-        gap: 20px;
+        gap: 1rem;
+        padding: 1rem;
+        font-size: 14px;
       }
       .panel {
-        padding: 10px;
+        padding: 1rem;
         border: 1px solid #ccc;
+        border-radius: 8px;
+        background: #f9f9f9;
+        overflow-y: auto;
       }
-      #gameState {
+      pre {
         white-space: pre-wrap;
-        background: #f4f4f4;
-        padding: 10px;
-        max-height: 500px;
+        background: #eee;
+        padding: 1rem;
+        max-height: 60vh;
         overflow-y: scroll;
+        border-radius: 4px;
+        font-size: 12px;
       }
-      .card-btn {
-        margin: 5px;
-        cursor: pointer;
+      button,
+      select,
+      input {
+        font-size: 1rem;
+        padding: 0.5rem;
+        margin: 0.25rem 0;
+      }
+      hr {
+        border: 0;
+        border-top: 1px solid #ccc;
+        margin: 1rem 0;
+      }
+      .player-info,
+      .card-info {
+        border: 1px solid #ddd;
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        border-radius: 4px;
+        background: #fff;
+      }
+      .card-actions button {
+        font-size: 0.8rem;
+        padding: 0.2rem 0.4rem;
+        margin-left: 0.5rem;
+      }
+      code {
+        background: #e0e0e0;
+        padding: 2px 4px;
+        border-radius: 3px;
       }
     </style>
   </head>
   <body>
     <div class="panel">
       <h2>Conexão</h2>
-      <input
-        type="text"
-        id="playerName"
-        placeholder="Nome do Jogador"
-        value="Tester"
-      />
-      <input
-        type="text"
-        id="roomName"
-        placeholder="ID da Sala"
-        value="debug_room"
-      />
-      <button id="connectBtn">Conectar e Entrar</button>
+      <input type="text" id="playerName" value="Tester" />
+      <input type="text" id="roomName" value="debug_room" />
+      <button id="connectBtn">Conectar</button>
       <button id="startGameBtn">Forçar Início</button>
       <hr />
       <h2>Minha Mão</h2>
       <div id="myHand"></div>
-      <hr />
-      <h2>Jogadores (Alvos)</h2>
-      <div id="playersTarget"></div>
     </div>
     <div class="panel">
       <h2>Ações de Debug</h2>
@@ -56,6 +76,9 @@
       <button id="giveCardBtn">Me Dar Carta</button>
       <br /><br />
       <button id="myTurnBtn">Forçar Meu Turno</button>
+      <hr />
+      <h2>Jogadores</h2>
+      <div id="playersInfo"></div>
     </div>
     <div class="panel" style="flex-grow: 1">
       <h2>Estado do Jogo (Game State)</h2>

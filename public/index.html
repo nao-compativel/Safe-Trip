@@ -30,6 +30,17 @@
           <label for="roomName">Nome da Sala</label>
           <input type="text" id="roomName" />
         </div>
+        <div class="input-group">
+          <label for="roomDistance">Distância da Partida</label>
+          <select id="roomDistance">
+            <option value="250">250 km (Ultra Rápida)</option>
+            <option value="500">500 km (Rápida)</option>
+            <option value="700" selected>700 km (Padrão)</option>
+            <option value="1000">1000 km (Longa)</option>
+            <option value="1500">1500 km (Maratona)</option>
+            <option value="2000">2000 km (Ultra Maratona)</option>
+          </select>
+        </div>
         <button class="action-button">Criar Sala</button>
         <button id="helpButton" class="action-button">Ajuda(?)</button>
       </div>

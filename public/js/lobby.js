@@ -68,25 +68,31 @@ function showError(element, message) {
  * A função agora salva os dados na sessão do navegador e redireciona imediatamente.
  * A responsabilidade de emitir 'entrarNaSala' foi movida para loading.js.
  */
-function joinRoom(roomId, distancia = 700) {
-  console.log(
-    `[LOBBY] Preparando para entrar na sala '${roomId}' com distância ${distancia}km.`
-  );
+function joinRoom(roomId, roomDistance) {
   const playerName = ui.playerNameInput.value.trim();
   if (!playerName) {
     showError(ui.playerNameInput, "Digite seu nome para entrar!");
     return;
   }
 
-  // Salva os dados para a próxima página (loading.html) ler.
+  // Se a distância não for passada (clicando em "Entrar" de uma sala existente),
+  // pegamos o valor do <select> (para o caso de "Criar Sala").
+  const distanciaFinal =
+    roomDistance || document.getElementById("roomDistance").value;
+
+  console.log(
+    `[LOBBY] Preparando para entrar na sala '${roomId}' com distância de ${distanciaFinal}km.`
+  );
+
+  // Salva os dados para a próxima página (partida.html) ler.
   localStorage.setItem("playerName", playerName);
   sessionStorage.setItem("playerName", playerName);
   sessionStorage.setItem("roomId", roomId);
-  sessionStorage.setItem("roomDistance", distancia); // Salva a distância também
+  sessionStorage.setItem("roomDistance", distanciaFinal); // Salva a distância escolhida
 
-  // Redireciona para a página de carregamento.
-  console.log("[LOBBY] Redirecionando para loading.html...");
-  window.location.href = "../pages/loading.html";
+  // Redireciona para a página de partida.
+  console.log("[LOBBY] Redirecionando para partida.html...");
+  window.location.href = "../pages/partida.html";
 }
 
 // --- EVENT LISTENERS (Ações do Usuário) ---

@@ -1,4 +1,4 @@
-import { GameRoom } from "../core/GameRoom";
+import { GameRoom } from "./GameRoom";
 
 class RoomManager {
   private rooms = new Map<string, GameRoom>();

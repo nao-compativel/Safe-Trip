@@ -1,97 +1,68 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
-
-body {
-    font-family: 'Poppins', sans-serif;
-    background-color: #6a5acd;
-    color: #f0f0f0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    padding: 20px;
+/* Adicionamos '.fase-espera' para que estes estilos SÓ funcionem na tela de espera */
+.fase-espera body {
+  font-family: "Poppins", sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
 }
 
-#tela-espera {
-    width: 100%;
-    max-width: 600px;
-    background-color: #6a6391;
-    border-radius: 20px;
-    padding: 40px;
-    text-align: center;
-    box-shadow: 0 10px 30px rgba(72, 61, 139, 0.85);
-
+.fase-espera #tela-espera {
+  width: 100%;
+  max-width: 600px;
+  background-color: #4a436f;
+  border-radius: 20px;
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
-/* --- Tipografia ---*/
-
-#tela-espera h2 {
-    font-size: 2.2em;
-    font-weight: 700;
-    margin-bottom: 10px;
-
+.fase-espera #tela-espera h2 {
+  font-size: 2.2em;
+  font-weight: 700;
+  margin-bottom: 10px;
 }
 
-#nome-sala-espera {
-    color: #f0b90b;
+.fase-espera #nome-sala-espera {
+  color: #f0b90b;
 }
 
-#tela-espera h3 {
-    font-size: 1.3em;
-    font-weight: 600;
-    color: #ddd;
-    margin-top: 30px;
-    margin-bottom: 15px;
-    border-top: 1px solid #857db0
-    padding 25px;
-
+.fase-espera #tela-espera h3 {
+  font-size: 1.3em;
+  font-weight: 600;
+  color: #ddd;
+  margin-top: 30px;
+  margin-bottom: 15px;
+  border-top: 1px solid #6a6391;
+  padding-top: 25px;
 }
 
-#lista-jogadores-espera {
-    list-style-type: none;
-    padding: 0;
-    margin-bottom: 40px;
+.fase-espera #lista-jogadores-espera {
+  list-style-type: none;
+  padding: 0;
+  margin-bottom: 40px;
 }
 
-#lista-jogadores-espera li {
-    background-color: #544e78;
-    border-radius: 10px;
-    padding: 12px 20px;
-    margin-bottom: 10px;
-    font-size: 1.1em;
-    font-weight: 600;
-    transition: transform 0.2s ease, background-color 0.2 ease;
+.fase-espera #lista-jogadores-espera li {
+  background-color: #544e78;
+  border-radius: 10px;
+  padding: 12px 20px;
+  margin-bottom: 10px;
+  font-size: 1.1em;
+  font-weight: 600;
+  transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
-#lista-jogadores-espera li:hover {
-    transform: scale(1.03);
-    background-color: #857db0;
-
-}
-
-#btn-iniciar-jogo {
-    width: 100%;
-    max-width: 300px;
-    padding: 15px;
-    font-size: 1.2em;
-    font-weight: 700;
-    color: #f0b90b;
-    background-color: transparent;
-    border: 2px solid #f0b90b;
-    border-radius: 50px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-
-}
-
-#btn-iniciar-jogo:hover {
-    background-color: #f0b90b;
-    color: #4a436f;
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-
-}
-
-#btn-inciar-jogo:active {
-    transform: translateY(0);
-    box-shadow: none;
+.fase-espera #btn-iniciar-jogo {
+  width: 100%;
+  max-width: 300px;
+  padding: 15px;
+  font-size: 1.2em;
+  font-weight: 700;
+  color: #f0b90b;
+  background-color: transparent;
+  border: 2px solid #f0b90b;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }

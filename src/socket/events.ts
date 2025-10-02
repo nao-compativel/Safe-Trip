@@ -1,7 +1,9 @@
-// src/socket/events.ts (VERSÃO FINAL CORRIGIDA)
-
+// src/socket/events.ts
 import { Server, Socket } from "socket.io";
-import { roomManager } from "./RoomManager";
+import { roomManager } from "../core/RoomManager";
+import { GameRoom } from "../core/GameRoom";
+import { Player } from "../core/Player";
+import { Card } from "../core/Card";
 
 function broadcastRoomList(io: Server) {
   const salasPublicas = roomManager.getPublicRooms();
@@ -13,53 +15,26 @@ export function handleSocketEvents(io: Server, socket: Socket) {
   socket.emit("listaDeSalas", roomManager.getPublicRooms());
 
   socket.on("entrarNaSala", ({ nomeJogador, idSala, distancia }) => {
-    console.log(`[SERVER] Evento 'entrarNaSala': ${nomeJogador} -> ${idSala}`);
-    const room = roomManager.getOrCreateRoom(idSala, distancia);
+    const room: GameRoom = roomManager.getOrCreateRoom(idSala, distancia);
 
-    if (room.estado === "AGUARDANDO") {
-      const resultado = room.adicionarJogador(socket.id, nomeJogador);
-      if (!resultado.success) {
-        socket.emit("erroEntrar", { message: resultado.message });
-        return;
-      }
-      socket.join(idSala);
-      socket.data.idSala = idSala;
-
-      const playersInfo = Array.from(room.jogadores.values()).map((p) => ({
-        id: p.id,
-        nome: p.nome,
-        isBot: p.isBot,
-      }));
-      io.to(idSala).emit("listaJogadores", playersInfo);
-      broadcastRoomList(io);
-    } else if (room.estado === "JOGO") {
-      // [LÓGICA DE RECONEXÃO ROBUSTA]
-      // Não confia mais na flag 'disconnected'. Apenas procura por nome.
+    if (room.estado === "JOGO") {
       const jogadorExistente = Array.from(room.jogadores.values()).find(
-        (p) => !p.isBot && p.nome === nomeJogador
+        (p: Player) => !p.isBot && p.nome === nomeJogador
       );
-
       if (!jogadorExistente) {
         socket.emit("erroEntrar", {
-          message: "Este jogo já começou e você não é um dos jogadores.",
+          message: "Este jogo já começou e você não é um jogador válido.",
         });
         return;
       }
 
-      console.log(
-        `[SERVER] Forçando reconexão para '${nomeJogador}'. Trocando ID ${jogadorExistente.id} por ${socket.id}`
-      );
       const oldSocketId = jogadorExistente.id;
-
-      // Desconecta o socket antigo se ele ainda estiver ativo por algum motivo
-      if (io.sockets.sockets.get(oldSocketId)) {
-        io.sockets.sockets.get(oldSocketId)?.disconnect();
+      if (room.jogadores.has(oldSocketId)) {
+        room.jogadores.delete(oldSocketId);
       }
 
-      room.jogadores.delete(oldSocketId);
-
       jogadorExistente.id = socket.id;
-      jogadorExistente.disconnected = false; // Garante que está como conectado
+      jogadorExistente.disconnected = false;
       room.jogadores.set(socket.id, jogadorExistente);
 
       const indexNaOrdem = room.ordemTurno.indexOf(oldSocketId);
@@ -69,10 +44,23 @@ export function handleSocketEvents(io: Server, socket: Socket) {
 
       socket.join(idSala);
       socket.data.idSala = idSala;
-
       io.to(idSala).emit("log", `${nomeJogador} reconectou!`);
       const gameState = room.getStateFor(socket.id);
-      socket.emit("updateState", gameState);
+      if (gameState) socket.emit("updateState", gameState);
+    } else {
+      // Estado AGUARDANDO
+      const resultado = room.adicionarJogador(socket.id, nomeJogador);
+      if (!resultado.success) {
+        socket.emit("erroEntrar", { message: resultado.message });
+        return;
+      }
+      socket.join(idSala);
+      socket.data.idSala = idSala;
+      const playersInfo = Array.from(room.jogadores.values()).map(
+        (p: Player) => p.publicState
+      );
+      io.to(idSala).emit("listaJogadores", playersInfo);
+      broadcastRoomList(io);
     }
   });
 
@@ -80,23 +68,33 @@ export function handleSocketEvents(io: Server, socket: Socket) {
     const room = roomManager.getRoom(idSala);
     if (room && room.jogadores.get(socket.id)) {
       if (room.jogadores.size === 1) {
-        room.addBots(3);
+        room.addBots(1);
       }
-      if (room.jogadores.size >= 2) {
-        room.onStateChange = (message?: string) => {
-          if (message) {
-            io.to(idSala).emit("log", message);
+
+      room.onStateChange = (message?: string) => {
+        if (message) io.to(idSala).emit("log", message);
+
+        room.jogadores.forEach((jogador: Player) => {
+          if (!jogador.isBot) {
+            const gameState = room.getStateFor(jogador.id);
+            if (gameState) io.to(jogador.id).emit("updateState", gameState);
           }
-          room.jogadores.forEach((jogador) => {
-            if (!jogador.isBot) {
-              const gameState = room.getStateFor(jogador.id);
-              io.to(jogador.id).emit("updateState", gameState);
-            }
-          });
-        };
-        room.iniciarJogo();
-        broadcastRoomList(io);
-      }
+        });
+
+        if (room.estado === "ENCERRADA") {
+          console.log(
+            `[GAME END] Partida na sala '${idSala}' terminou. Agendando limpeza em 30 segundos.`
+          );
+          setTimeout(() => {
+            console.log(`[CLEANUP] Deletando sala finalizada: ${idSala}`);
+            roomManager.deleteRoom(idSala);
+            broadcastRoomList(io);
+          }, 30000);
+        }
+      };
+
+      room.iniciarJogo();
+      broadcastRoomList(io);
     }
   });
 
@@ -106,6 +104,8 @@ export function handleSocketEvents(io: Server, socket: Socket) {
       const result = room.jogarCarta(socket.id, indiceCarta, alvoId);
       if (!result.success) {
         socket.emit("erroJogada", { message: result.message });
+      } else if (result.acao) {
+        io.to(socket.data.idSala).emit(result.acao.evento, result.acao.dados);
       }
     }
   });
@@ -117,49 +117,64 @@ export function handleSocketEvents(io: Server, socket: Socket) {
     }
   });
 
+  socket.on("debug:giveCard", ({ card }) => {
+    const room = roomManager.getRoom(socket.data.idSala);
+    const player = room?.jogadores.get(socket.id);
+    if (room && player && card) {
+      player.mao.push(card as Card);
+      room.onStateChange?.(
+        `Debug: ${player.nome} recebeu a carta ${card.valor}.`
+      );
+    }
+  });
+
+  socket.on("debug:forceMyTurn", () => {
+    const room = roomManager.getRoom(socket.data.idSala);
+    const player = room?.jogadores.get(socket.id);
+    if (room && player) {
+      const success = room.forceTurnFor(socket.id);
+      if (success) {
+        room.onStateChange?.(`Debug: Turno forçado para ${player.nome}.`);
+      }
+    }
+  });
+
   socket.on("disconnect", () => {
-    console.log(`[Disconnect] Usuário desconectado: ${socket.id}`);
     const idSala = socket.data.idSala;
     if (!idSala) return;
-
     const room = roomManager.getRoom(idSala);
     if (!room) return;
-
     const jogador = room.jogadores.get(socket.id);
-
-    // Se o jogador não foi encontrado, ele já foi substituído por uma reconexão, então não fazemos nada.
     if (!jogador) return;
 
-    if (room.estado === "AGUARDANDO") {
+    if (room.estado === "JOGO") {
+      jogador.disconnected = true;
+      io.to(idSala).emit("log", `${jogador.nome} se desconectou.`);
+      const humanPlayers = Array.from(room.jogadores.values()).filter(
+        (p: Player) => !p.isBot && !p.disconnected
+      );
+
+      // [CORREÇÃO] Verificação redundante removida
+      if (humanPlayers.length === 0) {
+        io.to(idSala).emit("jogoEncerrado", {
+          message: "Todos os jogadores saíram.",
+        });
+        roomManager.deleteRoom(idSala);
+        broadcastRoomList(io);
+      } else if (room.ordemTurno[room.jogadorAtualIdx] === socket.id) {
+        room.proximoTurno();
+      }
+    } else if (room.estado === "AGUARDANDO") {
       room.removerJogador(socket.id);
       if (room.jogadores.size === 0) {
         roomManager.deleteRoom(idSala);
+      } else {
+        io.to(idSala).emit(
+          "listaJogadores",
+          Array.from(room.jogadores.values()).map((p: Player) => p.publicState)
+        );
       }
       broadcastRoomList(io);
-    } else if (room.estado === "JOGO") {
-      if (!jogador.isBot) {
-        jogador.disconnected = true;
-        io.to(idSala).emit(
-          "log",
-          `${jogador.nome} se desconectou. Aguardando reconexão...`
-        );
-
-        const humanPlayers = Array.from(room.jogadores.values()).filter(
-          (p) => !p.isBot && !p.disconnected
-        );
-        if (humanPlayers.length === 0) {
-          console.log(
-            `[SERVER] Todos os humanos desconectaram da sala ${idSala}. Deletando sala.`
-          );
-          io.to(idSala).emit("jogoEncerrado", {
-            message: "Todos os jogadores saíram. A partida foi encerrada.",
-          });
-          roomManager.deleteRoom(idSala);
-          broadcastRoomList(io);
-        } else if (room.ordemTurno[room.jogadorAtualIdx] === socket.id) {
-          room.proximoTurno();
-        }
-      }
     }
   });
 }
